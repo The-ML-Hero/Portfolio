@@ -1,0 +1,94 @@
+/*
+ * Win95 cursors, everywhere.
+ *
+ * `cursor` is an inherited property, so one rule on <html> reaches the whole document — the
+ * scene, the loader, the title card and every window. The catch is that it loses to any
+ * element that declares its own, and the system default then shows through in patches: an
+ * `auto` on a scroll pane, a `pointer` on a clickable row, a `default` on an overlay. Every
+ * such spot is re-pointed here, and nothing outside this file should name a bare CSS cursor
+ * keyword.
+ *
+ * Hotspots are given in the sprite's own 20×20 space.
+ */
+
+:root {
+  --cur-arrow: url('/cursors/arrow.svg') 2 2, default;
+  --cur-hand: url('/cursors/hand.svg') 7 2, pointer;
+  --cur-text: url('/cursors/text.svg') 10 10, text;
+  --cur-busy: url('/cursors/busy.svg') 10 10, wait;
+  --cur-move: url('/cursors/move.svg') 10 10, move;
+  --cur-nwse: url('/cursors/resize-nwse.svg') 10 10, nwse-resize;
+}
+
+html,
+body {
+  cursor: var(--cur-arrow);
+}
+
+/*
+ * The arrow is the default over window contents too. Windows 95 showed the I-beam only inside
+ * edit controls, not over every selectable label — `cursor: auto` on a scroll pane hands the
+ * decision to the browser, which is where most of the system I-beams were coming from.
+ */
+.window-body-area,
+.desktop,
+.crt,
+canvas {
+  cursor: var(--cur-arrow);
+}
+
+/*
+ * Form controls. The UA stylesheet puts its own `cursor: default` on button, select and
+ * friends, and a declaration beats an inherited value however broad the inherited one is — so
+ * without this every button in the chrome (Start, the taskbar, window controls) falls back to
+ * the system arrow. Win95 used the plain arrow on buttons, so that is what they get.
+ */
+button,
+select,
+summary,
+label,
+[role='button'],
+input[type='button'],
+input[type='submit'],
+input[type='reset'],
+input[type='checkbox'],
+input[type='radio'],
+::-webkit-scrollbar,
+::-webkit-scrollbar-thumb,
+::-webkit-scrollbar-button {
+  cursor: var(--cur-arrow);
+}
+
+/* Only real edit controls get the I-beam. */
+input[type='text'],
+input[type='search'],
+input:not([type]),
+textarea,
+[contenteditable='true'] {
+  cursor: var(--cur-text);
+}
+
+/*
+ * The hand is for links and for anything acting as one. `.row-link` marks list rows that open
+ * something on click — they used to carry an inline `cursor: pointer`, which no stylesheet can
+ * override, so the system hand showed through in Atlas, Projects and the GitHub program.
+ */
+a[href],
+.row-link,
+.window-body-area table > tbody > tr.highlighted {
+  cursor: var(--cur-hand);
+}
+
+/* Dragging the raymarcher's camera. */
+.grab-surface {
+  cursor: var(--cur-move);
+}
+
+.resize-grip {
+  cursor: var(--cur-nwse);
+}
+
+[data-busy='true'],
+[data-busy='true'] * {
+  cursor: var(--cur-busy);
+}

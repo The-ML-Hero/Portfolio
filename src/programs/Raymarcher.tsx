@@ -115,7 +115,7 @@ export function Raymarcher() {
       </menu>
 
       {tab === 'render' ? (
-        <div ref={wrapRef} style={{ flex: 1, minHeight: 0, position: 'relative', background: '#05070c', cursor: 'grab' }} onPointerMove={onDrag}>
+        <div ref={wrapRef} className="grab-surface" style={{ flex: 1, minHeight: 0, position: 'relative', background: '#05070c' }} onPointerMove={onDrag}>
           {error
             ? <p className="mono" style={{ padding: 8, color: '#a00' }}>{error}</p>
             : <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block', imageRendering: 'pixelated' }} />}

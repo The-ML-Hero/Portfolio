@@ -27,7 +27,7 @@ export function Github() {
         </thead>
         <tbody>
           {projects.map((p) => (
-            <tr key={p.id} style={{ cursor: 'pointer' }} onDoubleClick={() => open('project-detail', { title: p.name, arg: p.id })}>
+            <tr key={p.id} className="row-link" onDoubleClick={() => open('project-detail', { title: p.name, arg: p.id })}>
               <td><strong>{p.name}</strong></td>
               <td className="mono" style={{ fontSize: 10 }}>{p.stack.join(' · ')}</td>
               <td className="dim">private</td>

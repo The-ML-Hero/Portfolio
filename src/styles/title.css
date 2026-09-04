@@ -29,7 +29,7 @@
   overflow: hidden;
   font-family: 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
   user-select: none;
-  cursor: default;
+  cursor: var(--cur-arrow);
 
   /*
    * The veil. The sheet covers everything except the letters, so this tints the letters and

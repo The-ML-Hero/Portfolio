@@ -19,7 +19,7 @@ export function Projects() {
               {projects.filter((p) => p.tier === g.tier).map((p) => (
                 <tr
                   key={p.id}
-                  style={{ cursor: 'pointer' }}
+                  className="row-link"
                   onDoubleClick={() => open('project-detail', { title: p.name, arg: p.id })}
                 >
                   <td style={{ width: '34%' }}>

@@ -27,7 +27,7 @@
   -webkit-font-smoothing: none;
   font-smooth: never;
   user-select: none;
-  cursor: url('/cursors/arrow.svg') 2 2, default;
+  cursor: var(--cur-arrow);
 }
 
 /* --- desktop --- */
@@ -60,7 +60,7 @@
   background: none;
   border: 0;
   font: inherit;
-  cursor: url('/cursors/arrow.svg') 2 2, default;
+  cursor: var(--cur-arrow);
 }
 .desktop-icon > span:first-child { filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.45)); }
 .desktop-icon .label {
@@ -99,7 +99,7 @@
   background: linear-gradient(90deg, var(--w95-title), var(--w95-title-2));
   color: #fff;
   font-weight: 700;
-  cursor: url('/cursors/arrow.svg') 2 2, default;
+  cursor: var(--cur-arrow);
 }
 .window-frame[data-focused='false'] .title-bar-row {
   background: linear-gradient(90deg, var(--w95-title-inactive), var(--w95-title-inactive-2));
@@ -129,14 +129,12 @@
   box-shadow: inset 1px 1px 0 var(--w95-dark), inset -1px -1px 0 var(--w95-light);
   padding: 6px;
   user-select: text;
-  cursor: auto;
 }
 
 .resize-grip {
   position: absolute;
   right: 0; bottom: 0;
   width: 14px; height: 14px;
-  cursor: nwse-resize;
 }
 
 /* --- taskbar --- */

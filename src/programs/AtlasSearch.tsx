@@ -30,7 +30,7 @@ export function AtlasSearch() {
           <tbody>
             {hits.map((h) => (
               <>
-                <tr key={h.docId} style={{ cursor: 'pointer' }} onClick={() => setExpanded(expanded === h.docId ? null : h.docId)}>
+                <tr key={h.docId} className="row-link" onClick={() => setExpanded(expanded === h.docId ? null : h.docId)}>
                   <td className="mono">{h.score.toFixed(3)}</td>
                   <td>
                     <strong>{h.title}</strong>

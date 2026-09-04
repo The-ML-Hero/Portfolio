@@ -1,3 +1,5 @@
+@import './styles/cursors.css';
+
 * { box-sizing: border-box; }
 /*
  * The page scrolls. The canvas is fixed and the only element with height is .scroll-track, so
@@ -6,7 +8,6 @@
  */
 html, body, #root { min-height: 100%; margin: 0; background: #dfe4ea; }
 html, body { overflow-x: hidden; }
-body { cursor: url('/cursors/arrow.svg') 2 2, default; }
 
 /* Print: the resume window only. Everything else — scene, chrome, taskbar — is hidden. */
 @media print {
