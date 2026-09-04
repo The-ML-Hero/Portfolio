@@ -119,18 +119,26 @@ export const OFFICE = {
   pitchX: 3.4,
   pitchZ: 3.9,
 
-  /** Desk slab: 1.55 m × 0.78 m, top flush with the model's own footing. */
+  /**
+   * Desk slab: 1.55 m × 0.94 m.
+   *
+   * `top` is the plane the terminal RESTS on, and it is the monitor mesh's underside at
+   * y = 0.055 — not the keyboard slab's at 0.180. Those are 0.125 apart because the keyboard
+   * sits on a tray moulded into the chassis, well above the desk. Taking the keyboard's figure
+   * (which is what KEYBOARD.bounds gives) buries the monitor's base 0.119 into the desk.
+   * A hair lower again, so the two surfaces are not coplanar and cannot z-fight.
+   */
   desk: {
     center: [0.07, 0.26] as const,
     w: 3.0,
-    d: 1.5,
+    d: 1.8,
     thickness: 0.09,
-    top: 0.174,
+    top: 0.052,
   },
 
   /** Floor sits a 0.73 m desk height below the slab; ceiling a shade under 2.8 m above it. */
-  floorY: 0.174 - 1.4,
-  ceilingY: 0.174 + 4.0,
+  floorY: 0.052 - 1.4,
+  ceilingY: 0.052 + 4.0,
 
   /** Cubicle panels: 1.35 m tall, 35 mm thick. */
   partition: { h: 2.6, t: 0.07 },

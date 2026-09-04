@@ -1,13 +1,14 @@
 import { useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { BufferAttribute, BufferGeometry, Group, Mesh, Vector3 } from 'three';
-import { KEYBOARD } from './constants';
+import { OFFICE } from './constants';
 
 /** Desk pad the mouse is confined to, to the right of the keyboard. */
 const PAD = {
   minX: 1.00, maxX: 1.72,
   minZ: 0.46, maxZ: 1.02,
-  y: KEYBOARD.bounds.min[1] - 0.004,
+  /* The mouse sits on the DESK, not on the chassis tray the keyboard sits on. */
+  y: OFFICE.desk.top + 0.002,
 };
 
 /** Where the cable disappears into the back of the terminal. */
