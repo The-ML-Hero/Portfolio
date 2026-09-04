@@ -1,0 +1,32 @@
+* { box-sizing: border-box; }
+/*
+ * The page scrolls. The canvas is fixed and the only element with height is .scroll-track, so
+ * vertical overflow has to stay live — it is what drives the camera down onto the desk. Any
+ * `overflow: hidden` here silently pins the whole descent at the overview.
+ */
+html, body, #root { min-height: 100%; margin: 0; background: #dfe4ea; }
+html, body { overflow-x: hidden; }
+body { cursor: url('/cursors/arrow.svg') 2 2, default; }
+
+/* Print: the resume window only. Everything else — scene, chrome, taskbar — is hidden. */
+@media print {
+  html, body, #root { height: auto; overflow: visible; background: #fff; }
+  canvas, .taskbar, .start-menu, .desktop-icons, .title-bar-row, .resize-grip, .no-print { display: none !important; }
+  .crt, .desktop { position: static; background: #fff; box-shadow: none; filter: none; }
+  .crt::before, .crt::after { display: none; }
+  .window-frame { position: static !important; width: auto !important; height: auto !important;
+                  border: 0; box-shadow: none; padding: 0; }
+  .window-body-area { border: 0; box-shadow: none; overflow: visible; background: #fff; padding: 0; }
+  .resume-doc { font: 11pt/1.45 Georgia, 'Times New Roman', serif; color: #000; }
+  .resume-doc .mono { font-family: 'DejaVu Sans Mono', monospace; }
+  .resume-doc h1 { font-size: 20pt; }
+  .resume-doc h2 { font-size: 11pt; border-bottom: 1px solid #000; margin-top: 14pt; }
+}
+
+/*
+ * Hide the scrollbar. The page has no readable content — its height exists only to drive the
+ * camera — so a scrollbar tracking 600vh of nothing is noise over the scene. The SCROLL hint
+ * carries the affordance instead.
+ */
+html { scrollbar-width: none; }
+html::-webkit-scrollbar { display: none; }

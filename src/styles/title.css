@@ -1,0 +1,276 @@
+/*
+ * Title card. The word is a hole cut through a paper sheet, and the office is what shows
+ * through it.
+ *
+ * Layering, back to front:
+ *   the WebGL canvas         — the live office overview, outside this component entirely
+ *   .title-card background   — an ink veil, seen ONLY through the letters, so they read dark
+ *   .tc-sheet <g mask>       — paper + cubicle plan, with the word knocked out of both
+ *   .tc-outline              — the letterforms' own edge, drawn over the sheet
+ *   .tc-inner                — year, name, footer, in ordinary DOM
+ *
+ * Palette is the room's: paper grey, ink, and the floor's blue as the single accent.
+ * Every stagger is driven by a --i / --n custom property set on the element.
+ */
+
+.title-card {
+  --tc-ink: #10243a;
+  --tc-paper: #e9edf1;
+  --tc-blue: #1f7fd6;
+  /* One source for the word's size: the SVG type uses it, and the block below is positioned
+     off it, so they cannot collide at any viewport. */
+  --tc-word: clamp(2.1rem, 9.2vw, 7.2rem);
+
+  position: fixed;
+  inset: 0;
+  /* Above the CSS3D desktop, which drei gives a z-index of up to 100. */
+  z-index: 1000;
+  color: var(--tc-ink);
+  overflow: hidden;
+  font-family: 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
+  user-select: none;
+  cursor: default;
+
+  /*
+   * The veil. The sheet covers everything except the letters, so this tints the letters and
+   * nothing else — which is what makes the word read as dark windows against pale paper even
+   * though the office behind is mostly white partitions.
+   */
+  background: rgba(16, 36, 58, 0.55);
+  animation: tc-veil-in 0.9s ease-out both;
+}
+
+.tc-sheet {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.tc-paper {
+  fill: var(--tc-paper);
+}
+
+/* --- the word, as a hole --- */
+
+.tc-cut {
+  font-size: var(--tc-word);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  /* Scaled from its own centre on exit, so the holes swallow the sheet. */
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Inside the mask, black paints the hole. */
+mask .tc-cut {
+  fill: #000;
+}
+
+.tc-outline {
+  fill: none;
+  stroke: var(--tc-ink);
+  stroke-width: 1.25;
+  opacity: 0.55;
+}
+
+/*
+ * The slats. One per column of the office grid, dropping open left to right — the word is
+ * revealed the way a bank of blinds opens, which is also how the plan behind it is divided.
+ */
+.tc-slat {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+  transform: scaleY(0);
+  animation: tc-slat-open 0.46s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(0.18s + var(--i) * 0.018s);
+}
+
+/* --- year, name, footer: ordinary DOM on top of the sheet --- */
+
+/*
+ * Hung off the word rather than centred independently. The word is drawn from its own middle
+ * at y=50%, so its lower edge sits about 0.36em below that; 0.62em clears it with a gap at
+ * every viewport, which independent centring plus a fixed margin does not.
+ */
+.tc-inner {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + var(--tc-word) * 0.62);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0 6vw;
+}
+
+.tc-year {
+  display: flex;
+  gap: 0.02em;
+  color: var(--tc-blue);
+  font-size: clamp(1.1rem, 3.5vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.tc-digit {
+  display: block;
+  height: 1em;
+  overflow: hidden;
+}
+
+.tc-reel {
+  display: block;
+  transform: translateY(0);
+  animation: tc-reel 1.05s cubic-bezier(0.15, 0.85, 0.2, 1) both;
+  animation-delay: calc(0.95s + var(--n) * 0.075s);
+}
+
+.tc-reel b {
+  display: block;
+  height: 1em;
+  font-weight: inherit;
+}
+
+/* Tracks out from tight to wide as it arrives. */
+.tc-name {
+  margin-top: 0.5rem;
+  font-size: clamp(0.7rem, 1.9vw, 1.05rem);
+  font-weight: 500;
+  opacity: 0;
+  letter-spacing: 0.02em;
+  animation: tc-track 0.9s cubic-bezier(0.16, 1, 0.3, 1) 1.3s both;
+}
+
+.tc-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 1.5rem;
+  font-family: var(--w95-mono), monospace;
+  font-size: clamp(0.56rem, 1.15vw, 0.72rem);
+  letter-spacing: 0.2em;
+  color: rgba(16, 36, 58, 0.55);
+  clip-path: inset(0 100% 0 0);
+  animation: tc-unclip 0.85s cubic-bezier(0.22, 1, 0.36, 1) 1.75s both;
+}
+
+.tc-meta i {
+  width: 22px;
+  height: 1px;
+  background: currentColor;
+}
+
+/* --- exit: the room arrives through the type --- */
+
+.title-card[data-leaving] {
+  pointer-events: none;
+  animation: tc-veil-out 0.98s cubic-bezier(0.55, 0, 0.6, 1) both;
+}
+
+/* The small type gets out of the way first — it is about to be behind a 50× letterform. */
+.title-card[data-leaving] .tc-inner {
+  animation: tc-small-out 0.26s ease-in both;
+}
+
+/*
+ * The holes grow until the sheet is gone. Ease IN, so it creeps and then rushes: the same
+ * shape as a camera accelerating into the room.
+ */
+.title-card[data-leaving] .tc-cut {
+  animation: tc-open 0.98s cubic-bezier(0.55, 0, 0.6, 1) both;
+}
+
+/* The outline cannot survive being scaled 50× — it goes early and quietly. */
+.title-card[data-leaving] .tc-outline {
+  animation: tc-open 0.98s cubic-bezier(0.55, 0, 0.6, 1) both,
+             tc-fade-out 0.34s linear both;
+}
+
+/* Whatever paper is still on screen at the end fades, so the reveal finishes clean. */
+.title-card[data-leaving] .tc-sheet {
+  animation: tc-sheet-out 0.98s cubic-bezier(0.7, 0, 0.9, 1) both;
+}
+
+@keyframes tc-veil-in {
+  from { background-color: rgba(16, 36, 58, 0); }
+  to { background-color: rgba(16, 36, 58, 0.55); }
+}
+
+@keyframes tc-veil-out {
+  0% { background-color: rgba(16, 36, 58, 0.55); }
+  70% { background-color: rgba(16, 36, 58, 0.16); }
+  100% { background-color: rgba(16, 36, 58, 0); }
+}
+
+@keyframes tc-slat-open {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes tc-open {
+  from { transform: scale(1); }
+  to { transform: scale(52); }
+}
+
+@keyframes tc-sheet-out {
+  0%, 62% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes tc-small-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(6px); }
+}
+
+@keyframes tc-reel {
+  from { transform: translateY(0); }
+  /* Two full turns plus the value, so the row it lands on prints --d. */
+  to { transform: translateY(calc(-1em * (20 + var(--d)))); }
+}
+
+@keyframes tc-track {
+  from { opacity: 0; letter-spacing: 0.02em; }
+  to { opacity: 1; letter-spacing: 0.42em; }
+}
+
+@keyframes tc-unclip {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes tc-fade-out {
+  from { opacity: 0.55; }
+  to { opacity: 0; }
+}
+
+/*
+ * Reduced motion: the card still appears and still leaves — it carries the name, so removing
+ * it is not an option — but nothing travels. The slats stand open, the reel lands, and the
+ * card crossfades instead of the holes expanding.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .tc-slat { animation: none; transform: scaleY(1); }
+  .tc-reel { animation: none; transform: translateY(calc(-1em * (20 + var(--d)))); }
+  .title-card { animation: tc-quick-in 0.3s linear both; }
+  .tc-name { animation: tc-quick-in 0.3s linear 0.2s both; letter-spacing: 0.42em; }
+  .tc-meta { clip-path: none; animation: tc-quick-in 0.3s linear 0.3s both; }
+  .title-card[data-leaving],
+  .title-card[data-leaving] .tc-sheet,
+  .title-card[data-leaving] .tc-inner { animation: tc-quick-out 0.35s linear both; }
+  .title-card[data-leaving] .tc-cut,
+  .title-card[data-leaving] .tc-outline { animation: none; }
+}
+
+@keyframes tc-quick-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes tc-quick-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}

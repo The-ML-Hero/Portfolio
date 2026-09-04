@@ -1,0 +1,159 @@
+/*
+ * CRT treatment for the DOM screen layer.
+ *
+ * Structure, outermost first:
+ *   .crt        — the tube. Owns the rounded bezel mask and the phosphor tint.
+ *   .crt-warp   — barrel-distorted layer; carries the SVG filter and a small overscan so the
+ *                 warp cannot pull the desktop's edges inside the mask.
+ *   .desktop    — the actual Win95 surface.
+ *   .crt-refl   — the room, reflected in the front glass. Above the desktop, inside the warp.
+ *   .crt-glass  — non-interactive overlay: scanlines, corner falloff, sheen, flicker.
+ */
+
+.crt {
+  position: relative;
+  overflow: hidden;
+  /* Desktop teal, not black: the warp inset below leaves a hairline ring at the mask edge,
+     and it should read as more desktop rather than as a gap. */
+  background: var(--w95-desktop);
+  /* Tube corners: wider radius horizontally, the way a 4:3 CRT actually rounds off. */
+  border-radius: 6.5% / 9%;
+  filter: saturate(1.05) contrast(1.03);
+}
+
+.crt-warp {
+  position: absolute;
+  inset: 0;
+  filter: url(#crt-barrel);
+  /*
+   * Inset, not overscan. A barrel bulge pushes content OUTWARD — worst case at the corners,
+   * where displacement is WARP_SCALE/2 = 10px in each axis. Enlarging the layer therefore
+   * threw the taskbar and the left icon column outside the mask. Shrinking by just over that
+   * margin (10px on a 425px-tall screen ≈ 2.4%) lets the bulge carry the edges back out to
+   * meet the frame instead of past it.
+   */
+  transform: scale(0.962);
+  transform-origin: center;
+}
+
+.crt-glass {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9000;
+  border-radius: inherit;
+}
+
+/* Scanlines. */
+.crt-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.17) 0px,
+    rgba(0, 0, 0, 0.17) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: multiply;
+  animation: crt-flicker 5s steps(24) infinite;
+}
+
+/*
+ * Corner falloff + the tube's specular sheen. The off-centre highlight and the darkening that
+ * follows the rounded corners are what actually sell the curve — the geometric warp alone
+ * reads as a wobble.
+ */
+.crt-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    /* soft white sheen, upper-left, as if from a window behind the viewer */
+    radial-gradient(60% 45% at 26% 16%, rgba(255, 255, 255, 0.10), transparent 62%),
+    /* faint second reflection lower-right */
+    radial-gradient(38% 28% at 78% 82%, rgba(190, 225, 255, 0.05), transparent 70%),
+    /* phosphor bloom toward centre */
+    radial-gradient(85% 70% at 50% 45%, rgba(130, 210, 255, 0.055), transparent 72%),
+    /* edge + corner darkening, tighter than a plain vignette so corners read as curved glass */
+    radial-gradient(108% 108% at 50% 50%, transparent 46%, rgba(0, 0, 0, 0.34) 78%, rgba(0, 0, 0, 0.72) 100%);
+  box-shadow:
+    inset 0 0 2.2rem rgba(0, 0, 0, 0.5),
+    inset 0 0 0.5rem rgba(0, 0, 0, 0.6);
+}
+
+@keyframes crt-flicker {
+  0%, 95%, 100% { opacity: 1; }
+  96% { opacity: 0.93; }
+  97.5% { opacity: 1.03; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-glass::before { animation: none; background-image: none; }
+  /* The warp is static, so it stays — only motion is removed. */
+}
+
+
+/*
+ * Reflection of the room in the tube's front glass.
+ *
+ * The image is captured once from the 3D scene (see scene/CrtReflection.tsx) and handed over
+ * as --crt-refl-image; position and opacity are rewritten every frame from the real camera, so
+ * the reflection slides across the glass as you move and dies with the lamp. It lives inside
+ * .crt-warp so the barrel distortion bends the reflection along with everything else — a
+ * reflection that stayed rectilinear over a curved screen would give the whole effect away.
+ *
+ * `screen` blending is what makes it behave: it lifts the dark desktop teal and the window
+ * shadows, and all but vanishes over white window bodies — which is exactly where a real
+ * reflection disappears too.
+ */
+.crt-refl {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8000;
+  overflow: hidden;
+  border-radius: inherit;
+  mix-blend-mode: screen;
+  opacity: var(--crt-refl-o, 0);
+  /* Feather into the bezel — bonded glass has no hard rectangular edge. */
+  -webkit-mask-image: radial-gradient(118% 118% at 50% 50%, #000 55%, transparent 96%);
+  mask-image: radial-gradient(118% 118% at 50% 50%, #000 55%, transparent 96%);
+}
+
+.crt-refl::before {
+  content: '';
+  position: absolute;
+  width: var(--crt-refl-size, 0);
+  height: var(--crt-refl-size, 0);
+  left: var(--crt-refl-x, 0);
+  top: var(--crt-refl-y, 0);
+  background-image: var(--crt-refl-image, none);
+  background-size: 100% 100%;
+  /* The capture is deliberately low-resolution; blurring it is what turns a coarse render
+     into something that reads as a diffuse reflection in glass rather than a pasted photo. */
+  filter: blur(2px) saturate(0.85);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The reflection tracks the camera, which under reduced motion only moves on explicit
+     input, so it stays — just held back, since its brightness still rides the lamp's flicker. */
+  .crt-refl { opacity: calc(var(--crt-refl-o, 0) * 0.65); }
+}
+
+/*
+ * Keep wheel and touch scrolling inside the screen.
+ *
+ * The page's scroll position is the camera's position, so a wheel gesture that chains out of a
+ * program window and onto the document would fly the visitor off the desk mid-read. `contain`
+ * stops the chaining at the screen's edge: a scrollable window scrolls, and once it hits its
+ * end, nothing further happens.
+ */
+.crt,
+.desktop,
+.window-body-area {
+  overscroll-behavior: contain;
+}

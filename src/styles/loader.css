@@ -1,0 +1,100 @@
+/*
+ * Full-page boot loader. Deliberately reads as a firmware screen rather than a web spinner:
+ * amber phosphor on black, block characters, no rounded corners, no easing curves that
+ * suggest 2015. It sits above everything until the scene is ready.
+ */
+
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: #06060a;
+  color: #f0b232;
+  font-family: var(--w95-mono, 'DejaVu Sans Mono', 'Courier New', monospace);
+  transition: opacity 0.6s ease, filter 0.6s ease;
+}
+
+/* Collapse out like a CRT losing its raster. */
+.loader.is-leaving {
+  opacity: 0;
+  filter: brightness(2.4) blur(1px);
+  pointer-events: none;
+}
+
+.loader-inner {
+  width: min(560px, 88vw);
+  text-shadow: 0 0 6px rgba(240, 178, 50, 0.45);
+}
+
+.loader-head {
+  /* Explicitly neutral: 98.css is imported globally and skins bare block elements. */
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  margin: 0 0 18px;
+  font-size: clamp(10px, 2.4vw, 13px);
+  line-height: 1.35;
+  white-space: pre;
+  color: #ffd27a;
+}
+
+.loader-bar {
+  font-size: clamp(10px, 2.5vw, 14px);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.loader-bar .brk { color: #7a5a1e; }
+.loader-bar .fill { color: #ffc247; }
+.loader-bar .empty { color: #4a3813; }
+.loader-bar .pct { margin-left: 10px; color: #ffd27a; }
+
+.loader-step {
+  margin-top: 14px;
+  font-size: clamp(10px, 2.3vw, 12px);
+  color: #b98b34;
+}
+.loader-step .dots::after {
+  content: '';
+  animation: loader-dots 1.2s steps(4) infinite;
+}
+@keyframes loader-dots {
+  0%   { content: ''; }
+  25%  { content: '.'; }
+  50%  { content: '..'; }
+  75%  { content: '...'; }
+}
+
+.loader-foot {
+  margin-top: 26px;
+  font-size: 11px;
+  color: #5d4718;
+}
+
+/* Scanlines over the whole panel, matching the CRT treatment inside the scene. */
+.loader-scan {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.28) 0px,
+    rgba(0, 0, 0, 0.28) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  animation: loader-flicker 4s steps(20) infinite;
+}
+@keyframes loader-flicker {
+  0%, 94%, 100% { opacity: 1; }
+  95% { opacity: 0.86; }
+  97% { opacity: 1.05; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader-scan { animation: none; }
+  .loader-step .dots::after { animation: none; content: '...'; }
+  .loader { transition: opacity 0.2s linear; }
+}
