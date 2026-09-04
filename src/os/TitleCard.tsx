@@ -1,9 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { OFFICE } from '../scene/constants';
+import { scrollFraction, titleProgress } from '../lib/scrollZones';
 import '../styles/title.css';
 
 /**
  * Title card, shown once the assets are in and before the visitor takes the camera.
+ *
+ * The reveal is *scrolled*, not played. Growing the letterforms on a timer made the card a
+ * thing that happened at you; driven by scroll it is the first stretch of the same gesture
+ * that then flies the camera across the floor, so opening the title and entering the room are
+ * one continuous movement with no seam where one ends and the other starts.
  *
  * The card is not laid over the room — it is cut out of it. A sheet of paper covers the
  * viewport and the word PORTFOLIO is a *hole* in that sheet, so the office is already visible,
@@ -24,59 +30,74 @@ const NAME = 'A. ADITHYA SHERWOOD';
 /** One slat per column of the office grid — the link is literal, not decorative. */
 const SLATS = OFFICE.cols;
 
-/** Total run time before it leaves on its own, in ms. Kept short — it is a title, not a film. */
-const DWELL = 3400;
-const EXIT_MS = 980;
+/**
+ * How the scrolled progress maps to what you see. Each is a plain function of p (0..1) rather
+ * than a keyframe, because p goes backwards as readily as forwards — the card re-closes if you
+ * scroll back up, right until it is fully open.
+ */
+/** Ease-in on the scale: it creeps, then rushes, the shape of a camera accelerating. */
+const scaleAt = (p: number) => 1 + 51 * Math.pow(p, 2.2);
+/** The veil has to be gone before the holes are, or the room arrives looking dirty. */
+const veilAt = (p: number) => 0.55 * (1 - smoothstep(0, 0.72, p));
+/** Small type steps aside early — it is about to be behind a fifty-times letterform. */
+const smallAt = (p: number) => 1 - clamp01(p / 0.22);
+/** Whatever paper is still on screen at the end fades, so the reveal finishes clean. */
+const sheetAt = (p: number) => 1 - smoothstep(0.6, 0.98, p);
+/** The outline cannot survive being scaled 50× — it goes early and quietly. */
+const outlineAt = (p: number) => 0.55 * (1 - clamp01(p / 0.28));
+
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+function smoothstep(a: number, b: number, v: number) {
+  const t = clamp01((v - a) / (b - a));
+  return t * t * (3 - 2 * t);
+}
 
 export function TitleCard({ onDone, hold }: { onDone: () => void; hold?: boolean }) {
-  const [leaving, setLeaving] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   const done = useRef(false);
 
   useEffect(() => {
     if (hold) return;
-    const finish = () => {
-      if (done.current) return;
-      done.current = true;
-      setLeaving(true);
-      window.setTimeout(onDone, EXIT_MS);
+    const el = ref.current;
+    if (!el) return;
+
+    let frame = 0;
+    const apply = () => {
+      frame = 0;
+      const p = titleProgress(scrollFraction());
+
+      el.style.setProperty('--tc-scale', scaleAt(p).toFixed(3));
+      el.style.setProperty('--tc-veil', veilAt(p).toFixed(3));
+      el.style.setProperty('--tc-small', smallAt(p).toFixed(3));
+      el.style.setProperty('--tc-sheet', sheetAt(p).toFixed(3));
+      el.style.setProperty('--tc-outline', outlineAt(p).toFixed(3));
+
+      // Any scroll at all snaps the slats open. They take under a second, but a visitor who
+      // scrolls immediately would otherwise be growing letterforms that are not cut yet.
+      if (p > 0) el.dataset.opened = '';
+
+      if (p >= 1 && !done.current) {
+        done.current = true;
+        onDone();
+      }
     };
 
-    /*
-     * Only start counting once the tab is actually being looked at. Chrome pauses CSS
-     * animations in a hidden tab but keeps timers running, so a background-tab load would
-     * otherwise spend the card's whole run on a blank screen and dismiss it before the
-     * visitor ever switched over.
-     */
-    let timer = 0;
-    const start = () => {
-      if (timer || document.visibilityState !== 'visible') return;
-      timer = window.setTimeout(finish, DWELL);
+    // Coalesce to one write per frame: scroll fires far more often than the page repaints.
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(apply);
     };
-    start();
-    document.addEventListener('visibilitychange', start);
-
-    // Always skippable. A title card that holds someone hostage is just a loading screen.
-    const opts = { passive: true } as const;
-    window.addEventListener('wheel', finish, opts);
-    window.addEventListener('touchstart', finish, opts);
-    window.addEventListener('keydown', finish);
-    window.addEventListener('pointerdown', finish);
+    apply();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
     return () => {
-      window.clearTimeout(timer);
-      document.removeEventListener('visibilitychange', start);
-      window.removeEventListener('wheel', finish);
-      window.removeEventListener('touchstart', finish);
-      window.removeEventListener('keydown', finish);
-      window.removeEventListener('pointerdown', finish);
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
     };
   }, [onDone, hold]);
 
   return (
-    <div
-      className="title-card"
-      data-leaving={leaving || undefined}
-      aria-label={`Portfolio ${YEAR}, ${NAME}`}
-    >
+    <div ref={ref} className="title-card" aria-label={`Portfolio ${YEAR}, ${NAME}`}>
       {/*
         The sheet. Its paper and its plan grid are one masked group, so the word knocks a hole
         through both at once — a grid line cannot survive inside a letter.

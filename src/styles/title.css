@@ -36,7 +36,8 @@
    * nothing else — which is what makes the word read as dark windows against pale paper even
    * though the office behind is mostly white partitions.
    */
-  background: rgba(16, 36, 58, 0.55);
+  /* --tc-veil is rewritten on scroll; the fade-in animation only covers its first appearance. */
+  background: rgba(16, 36, 58, var(--tc-veil, 0.55));
   animation: tc-veil-in 0.9s ease-out both;
 }
 
@@ -44,6 +45,7 @@
   position: absolute;
   inset: 0;
   display: block;
+  opacity: var(--tc-sheet, 1);
 }
 
 .tc-paper {
@@ -58,9 +60,13 @@
   letter-spacing: -0.035em;
   text-anchor: middle;
   dominant-baseline: middle;
-  /* Scaled from its own centre on exit, so the holes swallow the sheet. */
+  /*
+   * Scaled from its own centre as you scroll, so the holes swallow the sheet and the room
+   * arrives through the type. --tc-scale is written by the component each frame.
+   */
   transform-box: fill-box;
   transform-origin: center;
+  transform: scale(var(--tc-scale, 1));
 }
 
 /* Inside the mask, black paints the hole. */
@@ -72,7 +78,7 @@ mask .tc-cut {
   fill: none;
   stroke: var(--tc-ink);
   stroke-width: 1.25;
-  opacity: 0.55;
+  opacity: var(--tc-outline, 0.55);
 }
 
 /*
@@ -104,6 +110,7 @@ mask .tc-cut {
   align-items: center;
   gap: 0.55rem;
   padding: 0 6vw;
+  opacity: var(--tc-small, 1);
 }
 
 .tc-year {
@@ -164,46 +171,20 @@ mask .tc-cut {
   background: currentColor;
 }
 
-/* --- exit: the room arrives through the type --- */
-
-.title-card[data-leaving] {
-  pointer-events: none;
-  animation: tc-veil-out 0.98s cubic-bezier(0.55, 0, 0.6, 1) both;
-}
-
-/* The small type gets out of the way first — it is about to be behind a 50× letterform. */
-.title-card[data-leaving] .tc-inner {
-  animation: tc-small-out 0.26s ease-in both;
+/* --- the reveal: every value below is written from scroll, not from a keyframe --- */
+@keyframes tc-veil-in {
+  from { opacity: 0.001; }
+  to { opacity: 1; }
 }
 
 /*
- * The holes grow until the sheet is gone. Ease IN, so it creeps and then rushes: the same
- * shape as a camera accelerating into the room.
+ * Once the visitor starts scrolling the slats must already be open — they are growing holes
+ * that have to exist first. Under a second of entrance, so this only ever fires for someone
+ * who scrolls the instant the card appears.
  */
-.title-card[data-leaving] .tc-cut {
-  animation: tc-open 0.98s cubic-bezier(0.55, 0, 0.6, 1) both;
-}
-
-/* The outline cannot survive being scaled 50× — it goes early and quietly. */
-.title-card[data-leaving] .tc-outline {
-  animation: tc-open 0.98s cubic-bezier(0.55, 0, 0.6, 1) both,
-             tc-fade-out 0.34s linear both;
-}
-
-/* Whatever paper is still on screen at the end fades, so the reveal finishes clean. */
-.title-card[data-leaving] .tc-sheet {
-  animation: tc-sheet-out 0.98s cubic-bezier(0.7, 0, 0.9, 1) both;
-}
-
-@keyframes tc-veil-in {
-  from { background-color: rgba(16, 36, 58, 0); }
-  to { background-color: rgba(16, 36, 58, 0.55); }
-}
-
-@keyframes tc-veil-out {
-  0% { background-color: rgba(16, 36, 58, 0.55); }
-  70% { background-color: rgba(16, 36, 58, 0.16); }
-  100% { background-color: rgba(16, 36, 58, 0); }
+.title-card[data-opened] .tc-slat {
+  animation: none;
+  transform: scaleY(1);
 }
 
 @keyframes tc-slat-open {
@@ -258,11 +239,8 @@ mask .tc-cut {
   .title-card { animation: tc-quick-in 0.3s linear both; }
   .tc-name { animation: tc-quick-in 0.3s linear 0.2s both; letter-spacing: 0.42em; }
   .tc-meta { clip-path: none; animation: tc-quick-in 0.3s linear 0.3s both; }
-  .title-card[data-leaving],
-  .title-card[data-leaving] .tc-sheet,
-  .title-card[data-leaving] .tc-inner { animation: tc-quick-out 0.35s linear both; }
-  .title-card[data-leaving] .tc-cut,
-  .title-card[data-leaving] .tc-outline { animation: none; }
+  /* The reveal is a scroll gesture, not an animation, so it stays — the visitor is in
+     control of its speed by definition. Only the unattended entrance is flattened. */
 }
 
 @keyframes tc-quick-in {
@@ -270,7 +248,3 @@ mask .tc-cut {
   to { opacity: 1; }
 }
 
-@keyframes tc-quick-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}

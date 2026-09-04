@@ -348,8 +348,12 @@
  * what flies the camera down onto the desk (see scene/CameraRig.tsx).
  * ----------------------------------------------------------------------------------------- */
 
+/*
+ * Seven screens. The first ~12% opens the title card and the rest flies the camera (see
+ * lib/scrollZones.ts), so the track is a little longer than the camera alone needed.
+ */
 .scroll-track {
-  height: 600vh;
+  height: 700vh;
   pointer-events: none;
 }
 
@@ -359,7 +363,11 @@
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 20;
+  /*
+   * Above the title card. Scrolling is what opens the card now, so the one element that says
+   * "scroll" cannot be underneath it — at z-index 20 it was hidden for the whole title.
+   */
+  z-index: 1100;
   font: 600 11px/1 var(--w95-font), system-ui, sans-serif;
   letter-spacing: 0.22em;
   color: #16324d;

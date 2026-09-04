@@ -38,8 +38,9 @@ const noreflect = params.has('noreflect');
 const holdTitle = params.has('title');
 
 /**
- * Scroll affordance. Shown until the visitor has started moving, then it gets out of the way —
- * an overview of 280 identical desks gives no other clue that the page goes anywhere.
+ * Scroll affordance. Shown from the moment the assets are in, because scrolling is now what
+ * opens the title card as well as what flies the camera — nothing else on screen says the page
+ * goes anywhere. It gets out of the way as soon as the visitor takes the hint.
  */
 function ScrollHint({ ready }: { ready: boolean }) {
   const [hidden, setHidden] = useState(false);
@@ -168,7 +169,7 @@ export default function App() {
       */}
       <div className="scroll-track" aria-hidden />
 
-      <ScrollHint ready={loaded && titled} />
+      <ScrollHint ready={loaded} />
       <ExitHint />
       {!loaded && <LoadingScreen progress={progress} onDone={() => setLoaded(true)} />}
       {loaded && !titled && <TitleCard onDone={handleTitled} hold={holdTitle} />}

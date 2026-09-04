@@ -3,16 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { CatmullRomCurve3, PerspectiveCamera, Vector3 } from 'three';
 import { CAMERA, OVERVIEW, SEATED_FRAME, overviewDistance, seatedDistance } from './constants';
 import { useOS } from '../os/useOS';
-
-/**
- * Scroll fraction at which the camera has fully arrived and the desktop goes live.
- *
- * Everything past it is a dead zone that still maps to progress 1, so a stray wheel tick while
- * you are using the desktop does not nudge the camera off the desk.
- */
-export const ARRIVE_AT = 0.88;
-/** Where Esc drops you back to — just off the desk, not all the way to the ceiling. */
-export const EXIT_TO = 0.62;
+import { ARRIVE_AT, EXIT_TO, cameraProgress, scrollFraction } from '../lib/scrollZones';
 
 const smooth = (t: number) => t * t * (3 - 2 * t);
 
@@ -110,8 +101,7 @@ export function CameraRig() {
 
   useEffect(() => {
     const read = () => {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      raw.current = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+      raw.current = scrollFraction();
     };
     read();
     window.addEventListener('scroll', read, { passive: true });
@@ -141,7 +131,7 @@ export function CameraRig() {
     if (import.meta.env.DEV) {
       (window as unknown as { __rig: object }).__rig = { raw: raw.current, p: p.current };
     }
-    const t = Math.min(1, p.current / ARRIVE_AT);
+    const t = cameraProgress(p.current);
     path.positions.getPoint(t, pos);
     path.targets.getPoint(t, look);
 
