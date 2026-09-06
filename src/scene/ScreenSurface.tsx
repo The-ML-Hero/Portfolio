@@ -41,6 +41,19 @@ export function ScreenSurface() {
         * as a sticker. Kept smaller than the warp-inset desktop (0.93) — at full size it
         * showed as a cyan halo around the screen's edge instead of hiding behind it.
         */}
+      {/*
+        * Backing, at the glass plane and just behind the DOM.
+        *
+        * The desktop is inset 1.5% and its corners are rounded, while the model's own screen
+        * surface is a pale rectangle — so that surface showed through as a white ring, thickest
+        * exactly at the corners where the rounding cuts deepest. This puts unlit tube behind the
+        * cut instead, which is what a CRT's corners actually look like.
+        */}
+      <mesh position={[0, 0, -0.0004]}>
+        <planeGeometry args={[SCREEN.width * 1.02, SCREEN.height * 1.02]} />
+        <meshBasicMaterial color="#0a0e13" toneMapped={false} />
+      </mesh>
+
       <mesh position={[0, 0, -0.004]}>
         <planeGeometry args={[w * 0.93, h * 0.93]} />
         <meshBasicMaterial color="#14527d" toneMapped={false} />

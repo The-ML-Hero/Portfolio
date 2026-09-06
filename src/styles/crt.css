@@ -16,8 +16,13 @@
   /* Desktop teal, not black: the warp inset below leaves a hairline ring at the mask edge,
      and it should read as more desktop rather than as a gap. */
   background: var(--w95-desktop);
-  /* Tube corners: wider radius horizontally, the way a 4:3 CRT actually rounds off. */
-  border-radius: 6.5% / 9%;
+  /*
+   * Tube corners: wider radius horizontally, the way a 4:3 CRT actually rounds off. Kept
+   * shallow — a late CRT is nearly square at the corners, and a big radius reads as a phone
+   * screen. The dark backing behind the desktop (see scene/ScreenSurface.tsx) is what the cut
+   * exposes, so the curve reads as glass rather than as a hole.
+   */
+  border-radius: 3.6% / 5.2%;
   filter: saturate(1.05) contrast(1.03);
 }
 
