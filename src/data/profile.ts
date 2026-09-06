@@ -1,17 +1,68 @@
-// Content mirrors ~/Downloads/portfolio-brief (1).md verbatim.
+// Content mirrors ~/Downloads/portfolio-brief (1).md, with contact, education record,
+// interests and the skill split taken from Adithya_Sherwood_Resume (5).pdf.
 // Every figure on the site resolves here. Do not inline numbers in components.
 
 export const profile = {
   handle: 'Abnb',
-  publishesAs: 'Adithya A. Sherwood',
+  publishesAs: 'A. Adithya Sherwood',
   tagline: 'Systems programmer with a graphics habit.',
-  education: 'Second-year BE CSE, Thiagarajar College of Engineering (TCE), Madurai',
+  education: 'Third-year BE CSE, Thiagarajar College of Engineering (TCE), Madurai',
   location: 'Madurai, Tamil Nadu, India',
   github: 'https://github.com/The-ML-Hero',
   githubLabel: 'github.com/The-ML-Hero',
+  email: 'adithyasherwoodreal@gmail.com',
+  phone: '+91 8778819336',
+  site: 'https://adithyasherwood.vercel.app',
+  siteLabel: 'adithyasherwood.vercel.app',
   positioning:
     'Low-level, performance-oriented, academic. Not a full-stack web dev portfolio.',
-  languages: ['Go', 'Rust', 'C', 'JavaScript', 'GLSL', 'Python'],
+
+  /** Reverse-chronological, exactly as reported on the resume. */
+  schooling: [
+    {
+      what: 'B.E. Computer Science and Engineering',
+      where: 'Thiagarajar College of Engineering',
+      city: 'Madurai, Tamil Nadu',
+      when: '2024 – 2028',
+      mark: 'CGPA 9.02 / 10',
+    },
+    {
+      what: 'Higher Secondary (Class XII)',
+      where: 'Mahatma Montessori Matriculation Higher Secondary School',
+      city: 'Madurai, Tamil Nadu',
+      when: '2023 – 2024',
+      mark: '90.4%',
+    },
+    {
+      what: 'Secondary (Class X)',
+      where: 'Mahatma Montessori Matriculation Higher Secondary School',
+      city: 'Madurai, Tamil Nadu',
+      when: '2021 – 2022',
+      mark: '97.5%',
+    },
+  ],
+
+  interests: [
+    'Systems Programming',
+    'Web Development',
+    'Machine Learning',
+    'Computer Vision',
+    'Information Retrieval',
+    'Real-Time Systems',
+  ],
+
+  languages: ['Python', 'Rust', 'Go', 'C', 'JavaScript', 'GLSL'],
+  frameworks: ['PyTorch', 'React', 'Node.js', 'Express', 'Hugging Face Transformers'],
+  technologies: [
+    'WebGL',
+    'Multi-threading',
+    'Computer Vision',
+    'Real-Time Systems',
+    'CRDTs',
+    'Git',
+    'Docker',
+  ],
+
   domains: [
     'Distributed systems and search infrastructure',
     'WASM / edge computing and scheduling',

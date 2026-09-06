@@ -6,7 +6,10 @@ export function Contact() {
       <h2 style={{ marginTop: 0 }}>Contact</h2>
       <table>
         <tbody>
-          <tr><td style={{ width: '30%' }}>GitHub</td><td><a href={profile.github} target="_blank" rel="noreferrer">{profile.githubLabel}</a></td></tr>
+          <tr><td style={{ width: '30%' }}>Email</td><td><a href={`mailto:${profile.email}`}>{profile.email}</a></td></tr>
+          <tr><td>Phone</td><td className="mono">{profile.phone}</td></tr>
+          <tr><td>GitHub</td><td><a href={profile.github} target="_blank" rel="noreferrer">{profile.githubLabel}</a></td></tr>
+          <tr><td>Site</td><td><a href={profile.site} target="_blank" rel="noreferrer">{profile.siteLabel}</a></td></tr>
           <tr><td>Location</td><td>{profile.location}</td></tr>
           <tr><td>Institution</td><td>{profile.education}</td></tr>
         </tbody>
@@ -25,8 +28,12 @@ export function SystemProperties() {
           <tr><td>OS</td><td>{profile.environment.os}</td></tr>
           <tr><td>Editor</td><td>{profile.environment.editor}</td></tr>
           <tr><td>Languages</td><td>{profile.languages.join(', ')}</td></tr>
+          <tr><td>Frameworks</td><td>{profile.frameworks.join(', ')}</td></tr>
+          <tr><td>Technologies</td><td>{profile.technologies.join(', ')}</td></tr>
         </tbody>
       </table>
+      <h2>Areas of interest</h2>
+      <ul>{profile.interests.map((i) => <li key={i}>{i}</li>)}</ul>
       <h2>Domains</h2>
       <ul>{profile.domains.map((d) => <li key={d}>{d}</li>)}</ul>
       <h2>Coursework</h2>

@@ -12,12 +12,33 @@ export function About() {
       <p>{profile.positioning}</p>
 
       <fieldset>
+        <legend>Education</legend>
+        <table>
+          <tbody>
+            {profile.schooling.map((e) => (
+              <tr key={e.what}>
+                <td style={{ width: '52%' }}>{e.where}<br /><span className="dim">{e.what}</span></td>
+                <td>{e.mark}<br /><span className="dim mono" style={{ fontSize: 10 }}>{e.when}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </fieldset>
+
+      <fieldset>
+        <legend>Areas of interest</legend>
+        <p style={{ margin: 0 }}>{profile.interests.join(' · ')}</p>
+      </fieldset>
+
+      <fieldset>
         <legend>Setup</legend>
         <table>
           <tbody>
             <tr><td style={{ width: '30%' }}>OS</td><td>{profile.environment.os}</td></tr>
             <tr><td>Editor</td><td>{profile.environment.editor}</td></tr>
             <tr><td>Languages</td><td className="mono">{profile.languages.join('  ')}</td></tr>
+            <tr><td>Frameworks</td><td className="mono">{profile.frameworks.join('  ')}</td></tr>
+            <tr><td>Technologies</td><td className="mono">{profile.technologies.join('  ')}</td></tr>
           </tbody>
         </table>
       </fieldset>

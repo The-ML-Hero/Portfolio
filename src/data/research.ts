@@ -37,10 +37,16 @@ export const publication = {
 
 export const internship = {
   institution: 'IIIT Kottayam',
-  role: 'Research Internship',
+  role: 'Research Intern — Computer Vision',
+  city: 'Kottayam, Kerala',
+  dates: 'May 2026 – June 2026',
   supervisor: 'Dr. Jeena Thomas',
   summary:
     "Fine-tuned NASA's Prithvi geospatial foundation model on the SICKLE dataset for paddy harvest forecasting.",
+  details: [
+    "Fine-tuned NASA's Prithvi foundation model to predict crop harvest timelines from satellite imagery.",
+    'Engineered computer vision pipelines for agricultural pre-processing, augmentation, and evaluation.',
+  ],
 } as const;
 
 export const priorWork = {

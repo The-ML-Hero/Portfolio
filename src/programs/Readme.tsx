@@ -12,6 +12,7 @@ export function Readme() {
       <h2>Links</h2>
       <ul>
         <li><a href={profile.github} target="_blank" rel="noreferrer">{profile.githubLabel}</a></li>
+        <li><a href={`mailto:${profile.email}`}>{profile.email}</a></li>
         <li><a href="#" onClick={(e) => { e.preventDefault(); open('resume'); }}>Resume</a></li>
         <li><a href="#" onClick={(e) => { e.preventDefault(); open('contact'); }}>Contact</a></li>
       </ul>

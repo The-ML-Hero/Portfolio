@@ -55,7 +55,13 @@ export function Research() {
       <p className="dim">{publication.note}</p>
 
       <h2>{internship.institution} — {internship.role}</h2>
-      <p>Supervised by {internship.supervisor}. {internship.summary}</p>
+      <p className="dim mono" style={{ fontSize: 11, margin: '0 0 6px' }}>
+        {internship.city} · {internship.dates} · supervised by {internship.supervisor}
+      </p>
+      <p style={{ margin: '0 0 6px' }}>{internship.summary}</p>
+      <ul style={{ marginTop: 0 }}>
+        {internship.details.map((d) => <li key={d}>{d}</li>)}
+      </ul>
 
       <h2>{priorWork.title}</h2>
       <p>{priorWork.summary}</p>

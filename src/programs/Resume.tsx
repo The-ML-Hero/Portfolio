@@ -19,10 +19,14 @@ export function Resume() {
       <h2>Education</h2>
       {resume.education.map((e) => (
         <p key={e.what} style={{ margin: '0 0 6px' }}>
-          <strong>{e.what}</strong><br />
-          <span className="dim">{e.where} · {e.when}</span>
+          <strong>{e.where}</strong> <span className="dim">— {e.city}</span><br />
+          {e.what} · {e.mark}<br />
+          <span className="dim mono" style={{ fontSize: 10 }}>{e.when}</span>
         </p>
       ))}
+
+      <h2>Areas of interest</h2>
+      <p>{resume.interests.join(' · ')}</p>
 
       <h2>Research</h2>
       {resume.research.map((r) => (
@@ -47,8 +51,17 @@ export function Resume() {
         ))}
       </ul>
 
-      <h2>Skills</h2>
-      <p>{resume.skills.join(' · ')}</p>
+      <h2>Technical skills</h2>
+      <table>
+        <tbody>
+          {Object.entries(resume.skills).map(([group, items]) => (
+            <tr key={group}>
+              <td style={{ width: '26%' }}><strong>{group}</strong></td>
+              <td>{items.join(', ')}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
       <ul>{resume.domains.map((d) => <li key={d}>{d}</li>)}</ul>
     </div>
   );

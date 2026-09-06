@@ -45,8 +45,10 @@ export const projects: Project[] = [
       'In-memory docstore map, path→docID map, deleted set, write buffer, segment list, atomic counter',
       'fsnotify file watching, BM25 scoring with vector search fallback',
       'gRPC coordinator↔node communication; nodes run as separate processes across ports',
+      'Two-stage retrieval: fast BM25 lexical matching, with semantic embedding fallback for conceptual queries',
+      'Answers queries such as "find the file where I implemented X" across local file systems',
     ],
-    meta: 'Personal project, built for the love of it.',
+    meta: 'Personal project, built for the love of it. In progress.',
     demo: 'atlas',
   },
   {
@@ -88,6 +90,11 @@ export const projects: Project[] = [
       'An interactive TUI agent that guides users through medium-to-large solo Python projects. "Density" controls how much completed code and architecture the assistant hands over. Users edit in their own external editor rather than inside the TUI.',
       'LLM backend on OpenRouter/DeepSeek (originally Groq / Llama 3.3 70B).',
     ],
+    details: [
+      'Scaffolds solo Python projects by decomposing goals into milestone dependency graphs',
+      'Bounds how much reference code the agent reveals per milestone, so learners write the final implementation',
+      'Generates a reference implementation and grading test suite per milestone for verification',
+    ],
     meta: 'Team project, supervised by Dr. K. Sundarakantham.',
     team: ['Abnb', 'Athi Sankara Kailash K', 'Anbu U G'],
   },
@@ -100,6 +107,10 @@ export const projects: Project[] = [
     body: [
       'HTTP server written from scratch with a multi-threaded request-handling model. Concurrency, connection lifecycle, and request parsing all hand-rolled rather than pulled from a framework.',
     ],
+    details: [
+      'Socket management, routing and persistent connections built from scratch',
+      "Leans on Rust's ownership model to eliminate data races across concurrent request processing",
+    ],
   },
   {
     id: 'crdt-editor',
@@ -109,6 +120,10 @@ export const projects: Project[] = [
     blurb: 'Peer-to-peer multi-user editing, no central server.',
     body: [
       'Real-time multi-user text editing with conflict-free replicated data types. Peer-to-peer sync over WebRTC, no central server holding document state.',
+    ],
+    details: [
+      'Conflict resolution via Yjs, peer-to-peer sync via y-webrtc',
+      'Pagination and layout engine written from scratch, reflowing content across pages without libraries',
     ],
   },
   {
