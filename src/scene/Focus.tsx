@@ -28,15 +28,40 @@ import { focusTarget } from './CameraRig';
  * everything else on DepthOfFieldEffect is construction-only and would rebuild the pass.
  */
 
-/** Bokeh strength at each beat. */
-const BOKEH_TITLE = 9;
-const BOKEH_PAN = 1.8;
-const BOKEH_SEAT = 1.5;
+/*
+ * The beats, and where they land in the scroll.
+ *
+ * The first version of this put its heaviest defocus at scroll zero and racked in across the
+ * title — which is precisely backwards. At scroll zero the word is at 1× and almost no room
+ * shows through it, so the softest frame of the whole move was the one with nothing in it to
+ * be soft; by the time the letterforms filled the screen the lens had already sharpened. Then
+ * it held one value flat for four screens of traverse. The effect was real and essentially
+ * invisible.
+ *
+ * So the defocus now DEEPENS as the word opens, is at its softest exactly when the room fills
+ * the letterforms, and racks in afterwards over about a screen and a half — long enough to
+ * watch at a normal scrolling pace rather than something a flick skips past.
+ */
 
-/** Depth of the sharp zone, in world units. Large is deep focus; small is a shallow lens. */
-const RANGE_TITLE = 1.4;
-const RANGE_PAN = 22;
-const RANGE_SEAT = 1.5;
+/** Word just cut: a sliver of room, held soft. */
+const BOKEH_OPEN = 5;
+/** Word filling the frame, and the handover to the room. The softest point of the move. */
+const BOKEH_HANDOVER = 8;
+/** The traverse. Near-deep: a shallow plane over a floor seen from forty units up is the
+ *  tilt-shift miniature look, and this shot exists to say the room is enormous. */
+const BOKEH_DEEP = 1.5;
+/** Closed on one desk, where a real lens would be wide open and shallow. */
+const BOKEH_SEAT = 2.6;
+
+/** Depth of the sharp zone, in world units. */
+const RANGE_OPEN = 2.4;
+const RANGE_HANDOVER = 2;
+const RANGE_DEEP = 24;
+const RANGE_SEAT = 1.2;
+
+/** Where the rack finishes, and where the field starts closing again — in camera progress. */
+const RACK_ENDS = 0.3;
+const CLOSE_BEGINS = 0.55;
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const smooth = (t: number) => t * t * (3 - 2 * t);
@@ -54,14 +79,19 @@ export function Focus() {
 
     if (raw <= TITLE_SPAN) {
       const k = smooth(titleProgress(raw));
-      bokeh = lerp(BOKEH_TITLE, BOKEH_PAN, k);
-      range = lerp(RANGE_TITLE, RANGE_PAN, k);
+      bokeh = lerp(BOKEH_OPEN, BOKEH_HANDOVER, k);
+      range = lerp(RANGE_OPEN, RANGE_HANDOVER, k);
     } else {
-      /* Held flat across the traverse, then pulled in over the descent — the same split the
-         camera's own FOV uses, so the lens and the move arrive together. */
-      const k = smooth(Math.min(1, Math.max(0, (cameraProgress(raw) - 0.5) / 0.5)));
-      bokeh = lerp(BOKEH_PAN, BOKEH_SEAT, k);
-      range = lerp(RANGE_PAN, RANGE_SEAT, k);
+      const cp = cameraProgress(raw);
+      if (cp <= RACK_ENDS) {
+        const k = smooth(cp / RACK_ENDS);
+        bokeh = lerp(BOKEH_HANDOVER, BOKEH_DEEP, k);
+        range = lerp(RANGE_HANDOVER, RANGE_DEEP, k);
+      } else {
+        const k = smooth(Math.min(1, Math.max(0, (cp - CLOSE_BEGINS) / (1 - CLOSE_BEGINS))));
+        bokeh = lerp(BOKEH_DEEP, BOKEH_SEAT, k);
+        range = lerp(RANGE_DEEP, RANGE_SEAT, k);
+      }
     }
 
     effect.bokehScale = bokeh;
@@ -71,6 +101,13 @@ export function Focus() {
     };
     coc.worldFocusDistance = camera.position.distanceTo(focusTarget);
     coc.worldFocusRange = range;
+
+    if (import.meta.env.DEV) {
+      (window as unknown as { __lens: unknown }).__lens = {
+        raw: +raw.toFixed(4), bokeh: +bokeh.toFixed(2), range: +range.toFixed(2),
+        dist: +coc.worldFocusDistance.toFixed(2),
+      };
+    }
   });
 
   return (
@@ -79,7 +116,7 @@ export function Focus() {
       /* Construction-only, so it is set once and never animated: changing it rebuilds the
          pass, which costs a compiled shader and a visible hitch mid-move. */
       resolutionScale={DEVICE.coarse ? 0.4 : 0.75}
-      bokehScale={BOKEH_TITLE}
+      bokehScale={BOKEH_OPEN}
     />
   );
 }
