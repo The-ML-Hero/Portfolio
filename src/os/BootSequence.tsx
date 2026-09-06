@@ -47,8 +47,13 @@ export function BootSequence() {
     return () => clearTimeout(t);
   }, [stage, setStage]);
 
+  /*
+   * Skippable, but only once it is running. The wait now spans the title card and the whole
+   * descent, and every one of those is a click or a keypress — binding this during 'idle-wait'
+   * meant the first thing the visitor did skipped a boot that had not started yet.
+   */
   useEffect(() => {
-    if (stage === 'ready') return;
+    if (stage !== 'post' && stage !== 'splash') return;
     const skip = () => setStage('ready');
     window.addEventListener('keydown', skip);
     window.addEventListener('pointerdown', skip);
@@ -58,7 +63,14 @@ export function BootSequence() {
     };
   }, [stage, setStage]);
 
-  if (stage === 'ready' || stage === 'idle-wait') return null;
+  if (stage === 'ready') return null;
+
+  /*
+   * Before the visitor arrives, the machine is simply off. The desktop stays mounted behind
+   * this so nothing has to rebuild on arrival, but showing it across the descent gave away
+   * the whole screen from thirty metres up and left nothing to boot into.
+   */
+  if (stage === 'idle-wait') return <div className="boot-off" />;
 
   if (stage === 'splash') {
     return (

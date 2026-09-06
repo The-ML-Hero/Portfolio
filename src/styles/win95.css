@@ -291,12 +291,18 @@
 .doc a:hover { color: #c00; }
 
 /* --- boot --- */
+.boot-off,
 .boot-post,
 .boot-splash {
   position: absolute;
   inset: 0;
   z-index: 9500;
 }
+/* Powered down. Not quite black: a dark CRT still catches the room. */
+.boot-off {
+  background: #0a0e13;
+}
+
 .boot-post {
   background: #000;
   color: #c8c8c8;

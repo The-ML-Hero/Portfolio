@@ -45,10 +45,13 @@ const holdTitle = params.has('title');
 function ScrollHint({ ready }: { ready: boolean }) {
   const [hidden, setHidden] = useState(false);
   useEffect(() => {
+    // Not before the hint is up: a wheel tick during the lock moves the position for an
+    // instant before it is pinned back, which was enough to retire a hint never yet shown.
+    if (!ready) return;
     const onScroll = () => { if (window.scrollY > 40) setHidden(true); };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [ready]);
   if (!ready || hidden) return null;
   return (
     <div className="scroll-hint">
@@ -97,6 +100,7 @@ export default function App() {
   const setPhase = useOS((s) => s.setPhase);
   const open = useOS((s) => s.open);
   const bootStage = useOS((s) => s.bootStage);
+  const phase = useOS((s) => s.phase);
   const [progress, setProgress] = useState(0);
   const [loaded, setLoaded] = useState(false);
   /** The title card sits between the loader and the room; the scroll hint waits for it. */
@@ -123,10 +127,44 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
-  // Hold the in-world POST until the site loader has gone, so it is actually seen.
+  /*
+   * The machine powers on when the visitor gets to it, not when the page is ready. Booting on
+   * load meant the POST and the splash played out somewhere above the floor and the desktop
+   * was already sitting there, lit, by the time the camera arrived.
+   *
+   * Guarded on the current stage rather than firing on every arrival: scrolling back up and
+   * returning would otherwise reboot a machine that is already running.
+   */
   useEffect(() => {
-    if (loaded) setBootStage('post');
-  }, [loaded, setBootStage]);
+    if (phase !== 'seated') return;
+    if (useOS.getState().bootStage === 'idle-wait') setBootStage('post');
+  }, [phase, setBootStage]);
+
+  /*
+   * Nothing scrolls until the title card is on screen. Scroll position is not a decoration
+   * here — it is the camera and it is the title's reveal — so scrolling behind the loader
+   * spent both before either had been seen, and the loader handed straight over to a room
+   * already halfway descended.
+   */
+  useEffect(() => {
+    const root = document.documentElement;
+    if (loaded) {
+      root.classList.remove('is-locked');
+      window.scrollTo(0, 0);
+      return;
+    }
+    root.classList.add('is-locked');
+    /*
+     * `overflow: hidden` on the root is the honest way to say "not scrollable", but it only
+     * stops the browser's own scrolling — the position can still be moved, and it measurably
+     * is. Since that position is the camera, pin it: whatever gets through is undone before
+     * the next frame reads it.
+     */
+    const pin = () => { if (window.scrollY !== 0) window.scrollTo(0, 0); };
+    window.addEventListener('scroll', pin, { passive: true });
+    pin();
+    return () => window.removeEventListener('scroll', pin);
+  }, [loaded]);
 
   return (
     <>

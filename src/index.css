@@ -9,6 +9,9 @@
 html, body, #root { min-height: 100%; margin: 0; background: #dfe4ea; }
 html, body { overflow-x: hidden; }
 
+/* Held while the loader is up. See the note in App.tsx. */
+html.is-locked, html.is-locked body { overflow: hidden; overscroll-behavior: none; }
+
 /* Print: the resume window only. Everything else — scene, chrome, taskbar — is hidden. */
 @media print {
   html, body, #root { height: auto; overflow: visible; background: #fff; }
