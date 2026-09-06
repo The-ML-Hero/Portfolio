@@ -1,32 +1,43 @@
-# React + TypeScript + Vite
+# Portfolio
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A CRT terminal on the floor of an 816-desk office. Scroll and the camera crosses the room,
+picks one workstation and sits down at it; the screen runs a Windows 95 desktop where every
+section of the portfolio is a program. Two of them actually run rather than describe
+themselves — a WebGL raymarcher and a BM25 search engine.
 
-Currently, two official plugins are available:
+Live at [adithyasherwood.vercel.app](https://adithyasherwood.vercel.app).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Running it
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+`npm run build` emits to `dist/`.
+
+## How it is put together
+
+- **Scroll position is the only state.** It drives the title card's reveal and the camera's
+  descent from the same number, so opening the title and entering the room are one gesture
+  with no seam. `src/lib/scrollZones.ts` is the single source for that mapping.
+- **The screen is real DOM**, on a CSS3D plane inside the scene (drei's `<Html transform>`),
+  so text stays sharp and drag, click and keyboard work natively. The CRT treatment is CSS,
+  paired with an emissive plane in WebGL so the room is lit by the monitor.
+- **816 workstations, one draw call each** for desk, partition and terminal, via
+  `InstancedMesh` with the model's node matrix baked into every instance.
+- **The lighting is a procedurally built environment map** — `<Lightformer>` rects standing in
+  for ceiling troffers, not a downloaded `.hdr`. Swap in a file at `src/scene/Lighting.tsx`.
+
+## Content
+
+Everything on the site resolves to `src/data/` — profile, projects, research, resume. No figure
+appears in a component literal, so the publication's numbers have exactly one place to be wrong.
+
+## Credits
+
+3D model: "Computer Terminal" by Chris Sweetwood,
+[CC-BY-SA-4.0](http://creativecommons.org/licenses/by-sa/4.0/). Backdrop planes removed,
+textures recompressed. The key plate is original work.
+
+Built with three.js, React, Vite and 98.css.
