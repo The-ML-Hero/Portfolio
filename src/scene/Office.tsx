@@ -2,11 +2,13 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import {
-  Box3, BufferGeometry, InstancedMesh, Material, Matrix4, Mesh, Object3D, Vector3,
+  BufferGeometry, InstancedMesh, Material, Matrix4, Mesh, Object3D, Vector3,
 } from 'three';
 import { OFFICE, podOrigin } from './constants';
 
 const MODEL = '/models/terminal.opt.glb';
+/** Distant copies of the same terminal, 354 triangles instead of 1,323. See scripts/make-lod.mjs. */
+const MODEL_LOD = '/models/terminal.lod.glb';
 const DRACO = '/draco/';
 
 const POD_COUNT = OFFICE.cols * OFFICE.rows;
@@ -61,6 +63,7 @@ function useInstances(
 export function Office() {
   const pods = usePods();
   const { scene: model } = useGLTF(MODEL, DRACO);
+  const { scene: modelLod } = useGLTF(MODEL_LOD, DRACO);
 
   /** Source geometry/material pairs from the GLB, flattened with their baked transforms. */
   const parts = useMemo(() => {
@@ -73,6 +76,25 @@ export function Office() {
     });
     return out;
   }, [model]);
+
+  /*
+   * The same parts at low detail, matched to the full ones by mesh name. Simplification keeps
+   * the UVs, so these wear the full model's own material and texture — which is the whole
+   * point: at this size the silhouette and the texture are all that read, and a plain box
+   * (what this was first) reads as a box.
+   */
+  const lod = useMemo(() => {
+    const byName = new Map<string, BufferGeometry>();
+    modelLod.traverse((o) => {
+      const m = o as Mesh;
+      if (m.isMesh) byName.set(m.name, m.geometry);
+    });
+    return parts.map((p, i) => ({
+      geometry: byName.get(namesOf(model)[i]) ?? p.geometry,
+      material: p.material,
+      matrix: p.matrix,
+    }));
+  }, [modelLod, parts, model]);
 
   const { desk, partition } = OFFICE;
 
@@ -177,7 +199,7 @@ export function Office() {
         <meshStandardMaterial color="#dfe2e6" roughness={0.88} metalness={0} />
       </instancedMesh>
 
-      <Terminals parts={parts} pods={pods} />
+      <Terminals parts={parts} lod={lod} pods={pods} />
     </group>
   );
 }
@@ -201,55 +223,42 @@ const DETAIL_RADIUS = 22;
 /** Only reselect once the camera has actually gone somewhere. */
 const RESELECT_MOVE = 0.5;
 
+type Part = { geometry: BufferGeometry; material: Material | Material[]; matrix: Matrix4 };
+
 function Terminals({
   parts,
+  lod,
   pods,
 }: {
-  parts: { geometry: BufferGeometry; material: Material | Material[]; matrix: Matrix4 }[];
+  parts: Part[];
+  lod: Part[];
   pods: { x: number; z: number; hero: boolean }[];
 }) {
   const others = useMemo(() => pods.filter((p) => !p.hero), [pods]);
-
-  /** Each part's world-space box, which is what the far proxy is built from. */
-  const boxes = useMemo(
-    () =>
-      parts.map((p) => {
-        const g = p.geometry.clone().applyMatrix4(p.matrix);
-        g.computeBoundingBox();
-        const bb = g.boundingBox ?? new Box3();
-        const size = new Vector3();
-        const centre = new Vector3();
-        bb.getSize(size);
-        bb.getCenter(centre);
-        g.dispose();
-        return { size, centre };
-      }),
-    [parts],
-  );
 
   const detail = useRef<(InstancedMesh | null)[]>([]);
   const proxy = useRef<(InstancedMesh | null)[]>([]);
   const hidden = useRef<Set<number>>(new Set());
   const lastCam = useRef(new Vector3(Infinity, Infinity, Infinity));
 
-  /* Every pod gets a proxy, written once. Near pods are hidden by zeroing their scale. */
+  /* Every pod gets a low-detail copy, written once. Near pods hide theirs by zeroing scale. */
   useLayoutEffect(() => {
-    const d = new Object3D();
-    boxes.forEach((box, b) => {
+    const m = new Matrix4();
+    const offset = new Matrix4();
+    lod.forEach((part, b) => {
       const im = proxy.current[b];
       if (!im) return;
       others.forEach((pod, i) => {
-        d.position.set(pod.x + box.centre.x, box.centre.y, pod.z + box.centre.z);
-        d.scale.copy(box.size);
-        d.updateMatrix();
-        im.setMatrixAt(i, d.matrix);
+        offset.makeTranslation(pod.x, 0, pod.z);
+        m.multiplyMatrices(offset, part.matrix);
+        im.setMatrixAt(i, m);
       });
       im.count = others.length;
       im.instanceMatrix.needsUpdate = true;
       im.computeBoundingSphere();
     });
     hidden.current.clear();
-  }, [boxes, others]);
+  }, [lod, others]);
 
   useFrame(({ camera }) => {
     if (camera.position.distanceToSquared(lastCam.current) < RESELECT_MOVE * RESELECT_MOVE) return;
@@ -303,17 +312,18 @@ function Terminals({
       im.instanceMatrix.needsUpdate = true;
     });
 
-    /* Swap the proxies for exactly the pods whose detail state changed. */
-    const d = new Object3D();
+    /* Swap detail for exactly the pods whose state changed. Hiding is a zero scale. */
     const setProxy = (podIndex: number, show: boolean) => {
-      boxes.forEach((box, b) => {
+      lod.forEach((part, b) => {
         const im = proxy.current[b];
         if (!im) return;
-        const pod = others[podIndex];
-        d.position.set(pod.x + box.centre.x, box.centre.y, pod.z + box.centre.z);
-        d.scale.copy(show ? box.size : ZERO);
-        d.updateMatrix();
-        im.setMatrixAt(podIndex, d.matrix);
+        if (show) {
+          offset.makeTranslation(others[podIndex].x, 0, others[podIndex].z);
+          m.multiplyMatrices(offset, part.matrix);
+        } else {
+          m.makeScale(0, 0, 0);
+        }
+        im.setMatrixAt(podIndex, m);
         im.instanceMatrix.needsUpdate = true;
       });
     };
@@ -333,24 +343,23 @@ function Terminals({
           receiveShadow
         />
       ))}
-      {boxes.map((_, i) => (
+      {lod.map((p, i) => (
         <instancedMesh
           key={`p${i}`}
           ref={(el) => { proxy.current[i] = el; }}
-          args={[undefined, undefined, others.length]}
-          castShadow
+          args={[p.geometry, p.material as Material, others.length]}
+          /*
+           * No shadows from the distant field. Their shadows are a few pixels across at the
+           * only distance they are ever seen, and casting them means drawing all 815 a second
+           * time — the single largest thing left in the frame.
+           */
           receiveShadow
-        >
-          <boxGeometry args={[1, 1, 1]} />
-          {/* Stands in only at distance, where the model reads as a dark mass on a pale desk. */}
-          <meshStandardMaterial color="#434a53" roughness={0.72} metalness={0} />
-        </instancedMesh>
+        />
       ))}
     </>
   );
 }
 
-const ZERO = new Vector3(0, 0, 0);
 const FORWARD = new Vector3();
 
 /** Recessed fluorescent troffers, on the standard every-other-bay grid. */
@@ -397,3 +406,10 @@ function CeilingLights() {
 }
 
 useGLTF.preload(MODEL, DRACO);
+
+/** Mesh names in traversal order, so the LOD file's parts can be matched to the full model's. */
+function namesOf(root: Object3D): string[] {
+  const out: string[] = [];
+  root.traverse((o) => { if ((o as Mesh).isMesh) out.push(o.name); });
+  return out;
+}
