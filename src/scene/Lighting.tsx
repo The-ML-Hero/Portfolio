@@ -1,4 +1,5 @@
 import { Environment, Lightformer } from '@react-three/drei';
+import { DEVICE } from '../lib/device';
 import { OFFICE } from './constants';
 
 /**
@@ -69,7 +70,7 @@ export function Lighting() {
         intensity={0.85}
         color="#ffffff"
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[DEVICE.shadowMap, DEVICE.shadowMap]}
         shadow-bias={-0.0009}
         shadow-normalBias={0.02}
         shadow-camera-left={-gridW * 0.62}

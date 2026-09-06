@@ -1,7 +1,8 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import {
-  BufferGeometry, InstancedMesh, Material, Matrix4, Mesh, Object3D,
+  Box3, BufferGeometry, InstancedMesh, Material, Matrix4, Mesh, Object3D, Vector3,
 } from 'three';
 import { OFFICE, podOrigin } from './constants';
 
@@ -176,54 +177,181 @@ export function Office() {
         <meshStandardMaterial color="#dfe2e6" roughness={0.88} metalness={0} />
       </instancedMesh>
 
-      {parts.map((p, i) => (
-        <TerminalField key={i} part={p} pods={pods} />
-      ))}
+      <Terminals parts={parts} pods={pods} />
     </group>
   );
 }
 
 /**
- * One instanced copy of a single mesh from the terminal GLB, placed on every pod but the hero.
+ * The 815 background terminals, at two levels of detail.
  *
- * The GLB's own node transform is baked into each instance matrix rather than applied to a
- * parent, so the instances land in exactly the space scene/constants.ts measures.
+ * The model is 1,323 triangles. Drawn in full on every pod that was 1.08 M triangles a frame —
+ * 97% of the scene — submitted whether a pod filled the screen, was twenty pixels tall, or was
+ * behind the camera entirely: an InstancedMesh is culled as one object, so being off-screen
+ * saved nothing. Seated at the hero desk cost exactly as much as the opening pan.
+ *
+ * So the real geometry goes only to the pods near the camera, and everything else is drawn as
+ * two boxes. The boxes are sized from each part's own bounding box rather than from numbers
+ * typed here, so they keep the terminal's silhouette and cannot drift if the model changes.
+ * Nothing swaps within DETAIL_RADIUS, which is far enough out that a pod is a few dozen pixels
+ * tall when it does.
  */
-function TerminalField({
-  part,
+const DETAIL_MAX = 64;
+const DETAIL_RADIUS = 22;
+/** Only reselect once the camera has actually gone somewhere. */
+const RESELECT_MOVE = 0.5;
+
+function Terminals({
+  parts,
   pods,
 }: {
-  part: { geometry: BufferGeometry; material: Material | Material[]; matrix: Matrix4 };
+  parts: { geometry: BufferGeometry; material: Material | Material[]; matrix: Matrix4 }[];
   pods: { x: number; z: number; hero: boolean }[];
 }) {
-  const ref = useRef<InstancedMesh>(null);
+  const others = useMemo(() => pods.filter((p) => !p.hero), [pods]);
 
+  /** Each part's world-space box, which is what the far proxy is built from. */
+  const boxes = useMemo(
+    () =>
+      parts.map((p) => {
+        const g = p.geometry.clone().applyMatrix4(p.matrix);
+        g.computeBoundingBox();
+        const bb = g.boundingBox ?? new Box3();
+        const size = new Vector3();
+        const centre = new Vector3();
+        bb.getSize(size);
+        bb.getCenter(centre);
+        g.dispose();
+        return { size, centre };
+      }),
+    [parts],
+  );
+
+  const detail = useRef<(InstancedMesh | null)[]>([]);
+  const proxy = useRef<(InstancedMesh | null)[]>([]);
+  const hidden = useRef<Set<number>>(new Set());
+  const lastCam = useRef(new Vector3(Infinity, Infinity, Infinity));
+
+  /* Every pod gets a proxy, written once. Near pods are hidden by zeroing their scale. */
   useLayoutEffect(() => {
-    const im = ref.current;
-    if (!im) return;
+    const d = new Object3D();
+    boxes.forEach((box, b) => {
+      const im = proxy.current[b];
+      if (!im) return;
+      others.forEach((pod, i) => {
+        d.position.set(pod.x + box.centre.x, box.centre.y, pod.z + box.centre.z);
+        d.scale.copy(box.size);
+        d.updateMatrix();
+        im.setMatrixAt(i, d.matrix);
+      });
+      im.count = others.length;
+      im.instanceMatrix.needsUpdate = true;
+      im.computeBoundingSphere();
+    });
+    hidden.current.clear();
+  }, [boxes, others]);
+
+  useFrame(({ camera }) => {
+    if (camera.position.distanceToSquared(lastCam.current) < RESELECT_MOVE * RESELECT_MOVE) return;
+    lastCam.current.copy(camera.position);
+
+    /*
+     * True distance, height included. Measuring it across the floor only meant the opening
+     * pan — forty units up, but horizontally right above the middle of the field — promoted a
+     * full detail budget of pods that were each a few pixels tall.
+     */
+    const cx = camera.position.x;
+    const cy = camera.position.y - OFFICE.desk.top;
+    const cz = camera.position.z;
+    const d2 = (i: number) => (others[i].x - cx) ** 2 + cy * cy + (others[i].z - cz) ** 2;
+
+    /*
+     * And nothing behind the camera. Instances are culled as one object, so a pod at the back
+     * of the room costs a full model however far outside the frame it is — seated at the desk
+     * that was most of the budget spent on pods nobody can see. The margin keeps pods just
+     * outside the frame detailed, so turning does not swap one in visibly.
+     */
+    camera.getWorldDirection(FORWARD);
+
+    const near: number[] = [];
+    for (let i = 0; i < others.length; i++) {
+      if (d2(i) > DETAIL_RADIUS * DETAIL_RADIUS) continue;
+      const dx = others[i].x - cx;
+      const dz = others[i].z - cz;
+      const ahead = dx * FORWARD.x + -cy * FORWARD.y + dz * FORWARD.z;
+      if (ahead < -0.3 * Math.sqrt(d2(i))) continue;
+      near.push(i);
+    }
+    if (near.length > DETAIL_MAX) {
+      near.sort((a, b) => d2(a) - d2(b));
+      near.length = DETAIL_MAX;
+    }
+
+    const want = new Set(near);
     const m = new Matrix4();
     const offset = new Matrix4();
-    let n = 0;
-    for (const pod of pods) {
-      if (pod.hero) continue; // the real one lives here
-      offset.makeTranslation(pod.x, 0, pod.z);
-      m.multiplyMatrices(offset, part.matrix);
-      im.setMatrixAt(n++, m);
-    }
-    im.count = n;
-    im.instanceMatrix.needsUpdate = true;
-    im.computeBoundingSphere();
-  }, [part, pods]);
+
+    parts.forEach((part, b) => {
+      const im = detail.current[b];
+      if (!im) return;
+      near.forEach((podIndex, n) => {
+        offset.makeTranslation(others[podIndex].x, 0, others[podIndex].z);
+        m.multiplyMatrices(offset, part.matrix);
+        im.setMatrixAt(n, m);
+      });
+      im.count = near.length;
+      im.instanceMatrix.needsUpdate = true;
+    });
+
+    /* Swap the proxies for exactly the pods whose detail state changed. */
+    const d = new Object3D();
+    const setProxy = (podIndex: number, show: boolean) => {
+      boxes.forEach((box, b) => {
+        const im = proxy.current[b];
+        if (!im) return;
+        const pod = others[podIndex];
+        d.position.set(pod.x + box.centre.x, box.centre.y, pod.z + box.centre.z);
+        d.scale.copy(show ? box.size : ZERO);
+        d.updateMatrix();
+        im.setMatrixAt(podIndex, d.matrix);
+        im.instanceMatrix.needsUpdate = true;
+      });
+    };
+    for (const i of want) if (!hidden.current.has(i)) setProxy(i, false);
+    for (const i of hidden.current) if (!want.has(i)) setProxy(i, true);
+    hidden.current = want;
+  });
 
   return (
-    <instancedMesh
-      ref={ref}
-      args={[part.geometry, part.material as Material, pods.length]}
-      castShadow
-      receiveShadow
-    />
+    <>
+      {parts.map((p, i) => (
+        <instancedMesh
+          key={`d${i}`}
+          ref={(el) => { detail.current[i] = el; }}
+          args={[p.geometry, p.material as Material, DETAIL_MAX]}
+          castShadow
+          receiveShadow
+        />
+      ))}
+      {boxes.map((_, i) => (
+        <instancedMesh
+          key={`p${i}`}
+          ref={(el) => { proxy.current[i] = el; }}
+          args={[undefined, undefined, others.length]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry args={[1, 1, 1]} />
+          {/* Stands in only at distance, where the model reads as a dark mass on a pale desk. */}
+          <meshStandardMaterial color="#434a53" roughness={0.72} metalness={0} />
+        </instancedMesh>
+      ))}
+    </>
   );
 }
+
+const ZERO = new Vector3(0, 0, 0);
+const FORWARD = new Vector3();
 
 /** Recessed fluorescent troffers, on the standard every-other-bay grid. */
 function CeilingLights() {

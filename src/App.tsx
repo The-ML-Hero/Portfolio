@@ -15,6 +15,7 @@ import { LoadingScreen } from './os/LoadingScreen';
 import { TitleCard } from './os/TitleCard';
 import { OVERVIEW, overviewDistance } from './scene/constants';
 import { useOS } from './os/useOS';
+import { DEVICE } from './lib/device';
 import './styles/win95.css';
 
 /** First-frame camera placement, matching what CameraRig will settle on for this viewport. */
@@ -170,7 +171,7 @@ export default function App() {
     <>
       <Canvas
         shadows
-        dpr={[1, 2]}
+        dpr={[1, DEVICE.maxDpr]}
         // preserveDrawingBuffer keeps the frame readable for screenshot-based verification.
         // It costs a buffer copy per frame, so it is dev-only.
         gl={{ preserveDrawingBuffer: import.meta.env.DEV }}
