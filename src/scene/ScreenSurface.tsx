@@ -1,6 +1,7 @@
 import { Html } from '@react-three/drei';
 import { SCREEN, SCREEN_RES } from './constants';
 import { Desktop } from '../os/Desktop';
+import { Beacon } from './Beacon';
 
 /**
  * The Win95 desktop, rendered as real DOM on a CSS3D plane matched to the CRT glass.
@@ -62,6 +63,8 @@ export function ScreenSurface() {
         <planeGeometry args={[w * 0.93, h * 0.93]} />
         <meshBasicMaterial color="#14527d" toneMapped={false} />
       </mesh>
+      <Beacon />
+
       <pointLight position={[0, 0, 0.36]} intensity={1.15} distance={1.9} decay={2} color="#8fd0ff" />
     </group>
   );
