@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { OFFICE } from '../scene/constants';
 import { BALL_PATH, STROKES, VIEW, C, R } from '../lib/markA';
 import '../styles/loader.css';
@@ -16,6 +16,25 @@ const STEPS = [
 const FLY = 78;
 const HOLD = 92;
 
+/** One full cycle. Kept here rather than in the stylesheet: the exit timing is derived from it. */
+const CYCLE_MS = 2900;
+/** When the ball lands on the last point and the A is closed. */
+const FLY_MS = (CYCLE_MS * FLY) / 100;
+/** A beat on the finished mark before the white takes it. */
+const BEAT_MS = 260;
+
+/**
+ * Slack on each stroke's dash pattern. Two problems, one number.
+ *
+ * `stroke-dasharray: L` on a path of length L is not "one dash" — it is a repeating pattern of
+ * L on, L off, so pushing the first dash off the start pulls the next one in at the end, and
+ * the stroke shows a stub at its far end before it is drawn. Giving the gap `L + 2·CAP` makes
+ * the pattern longer than the path, so only one dash can ever touch it. The offset then parks
+ * that dash CAP units clear of the start, which is also what hides the round cap — otherwise
+ * half of one pokes out as a dot on the ring where the crossbar has not arrived yet.
+ */
+const CAP = 8;
+
 /**
  * Per-stroke keyframes, generated from the real chord lengths so each one is drawn exactly
  * while the ball is on it. Written once at module load, not per render.
@@ -25,7 +44,7 @@ const MARK_CSS = [
     const from = (s.from * FLY).toFixed(2);
     const to = (s.to * FLY).toFixed(2);
     const start = s.from <= 0 ? '0%' : `0%, ${from}%`;
-    return `@keyframes mk-s${i}{${start}{stroke-dashoffset:${s.len.toFixed(2)}}${to}%,100%{stroke-dashoffset:0}}`;
+    return `@keyframes mk-s${i}{${start}{stroke-dashoffset:${(s.len + CAP).toFixed(2)}}${to}%,100%{stroke-dashoffset:0}}`;
   }),
   `@keyframes mk-ball{0%{offset-distance:0%;opacity:0}3%{opacity:1}${FLY}%{offset-distance:100%}${HOLD}%{offset-distance:100%;opacity:1}100%{offset-distance:100%;opacity:0}}`,
   `@keyframes mk-fade{0%,${HOLD}%{opacity:1}100%{opacity:0}}`,
@@ -46,6 +65,24 @@ const MARK_CSS = [
 export function LoadingScreen({ progress, onDone }: { progress: number; onDone: () => void }) {
   const [shown, setShown] = useState(0);
   const [leaving, setLeaving] = useState(false);
+  const ball = useRef<SVGCircleElement>(null);
+
+  /**
+   * Is the ball sitting on a closed A? Read off the ball's own animation, which is the only
+   * clock that tracks what is on screen: a browser that is not painting the page does not
+   * advance it, so a page opened in a background tab still gets its mark drawn when the
+   * visitor looks at it, instead of having splashed to white while nobody was watching.
+   *
+   * Under reduced motion the ball is invisible but its animation still runs, purely so this
+   * keeps working.
+   */
+  const closed = useCallback(() => {
+    const anim = ball.current?.getAnimations?.()[0];
+    const t = anim?.currentTime;
+    // No animation to wait on (unsupported, or none running): nothing to hold for.
+    if (typeof t !== 'number') return true;
+    return t % CYCLE_MS >= FLY_MS;
+  }, []);
 
   // Ease the bar toward real progress so it never jumps or stalls at a hard number.
   useEffect(() => {
@@ -63,18 +100,53 @@ export function LoadingScreen({ progress, onDone }: { progress: number; onDone: 
    * which browsers throttle in backgrounded or occluded tabs — gating on it meant the loader
    * could sit forever on a page that had actually finished loading.
    */
+  /*
+   * The loader does not leave the moment the assets are in — it leaves when the mark is
+   * finished. Cutting to white mid-flight threw away the only thing the loader is for, and on
+   * a warm cache that was every time. Worst case this holds the page for one more pass of the
+   * A; the mark is the point, so that is the right trade.
+   */
   useEffect(() => {
     if (progress < 100) return;
-    const settle = setTimeout(() => setLeaving(true), 300);
-    const done = setTimeout(onDone, 1560);
-    return () => { clearTimeout(settle); clearTimeout(done); };
-  }, [progress, onDone]);
+    let raf = 0;
+    let beat = 0;
+    const go = () => {
+      beat = window.setTimeout(() => setLeaving(true), BEAT_MS);
+    };
+    const poll = () => {
+      if (closed()) go();
+      else raf = requestAnimationFrame(poll);
+    };
+    poll();
+    /*
+     * Never wedge on the mark. A painting tab reaches the closed window inside one cycle, so
+     * this only fires when the animation is not running at all — and it is deliberately far
+     * past that, because leaving on this path is the mid-draw cut the whole gate exists to
+     * prevent, and it is better to hold a page nobody is looking at than to spend the mark.
+     */
+    const bail = setTimeout(go, 15000);
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      clearTimeout(beat);
+      clearTimeout(bail);
+    };
+  }, [progress, closed]);
+
+  /* Unmount only once the flood has covered the page and settled onto the card underneath. */
+  useEffect(() => {
+    if (!leaving) return;
+    const done = setTimeout(onDone, 1260);
+    return () => clearTimeout(done);
+  }, [leaving, onDone]);
 
   const pct = Math.min(100, Math.round(shown));
   const step = STEPS[Math.min(STEPS.length - 1, Math.floor((pct / 100) * STEPS.length))];
 
   return (
-    <div className={`loader${leaving ? ' is-leaving' : ''}`}>
+    <div
+      className={`loader${leaving ? ' is-leaving' : ''}`}
+      style={{ '--mk-cycle': `${CYCLE_MS}ms` } as React.CSSProperties}
+    >
       <style>{MARK_CSS}</style>
 
       <div className="loader-inner">
@@ -88,8 +160,8 @@ export function LoadingScreen({ progress, onDone }: { progress: number; onDone: 
                 className="mk-stroke"
                 d={s.d}
                 style={{
-                  strokeDasharray: s.len,
-                  strokeDashoffset: s.len,
+                  strokeDasharray: `${s.len} ${s.len + 2 * CAP}`,
+                  strokeDashoffset: s.len + CAP,
                   animationName: `mk-s${i}`,
                 }}
               />
@@ -97,7 +169,7 @@ export function LoadingScreen({ progress, onDone }: { progress: number; onDone: 
           </g>
 
           {/* Rides the whole flight, including the chord the trail does not record. */}
-          <circle className="mk-ball" r="5.4" style={{ offsetPath: `path("${BALL_PATH}")` }} />
+          <circle ref={ball} className="mk-ball" r="5.4" style={{ offsetPath: `path("${BALL_PATH}")` }} />
         </svg>
 
         <div className="loader-bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>

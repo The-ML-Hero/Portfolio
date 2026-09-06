@@ -63,6 +63,17 @@
 }
 
 /*
+ * Freeze the mark on the closed A for the whole flood. The trail clears itself near the end of
+ * each cycle, and the splash outlasts the beat we wait — without this the letter could start
+ * dissolving underneath the white it is supposed to be handing over to.
+ */
+.loader.is-leaving .mk-trail,
+.loader.is-leaving .mk-stroke,
+.loader.is-leaving .mk-ball {
+  animation-play-state: paused;
+}
+
+/*
  * Starts at roughly the ring's own size, not at nothing, so the white reads as the circle
  * bursting rather than as a new shape arriving. The exact ratio drifts with viewport shape
  * (the mark is capped in px, the disc is in vmax) and cannot be a calc — CSS has no
@@ -180,7 +191,8 @@
      rather than clearing and redrawing for as long as the load takes. */
   .mk-trail { animation: none; }
   .mk-stroke { animation-iteration-count: 1; animation-fill-mode: forwards; }
-  .mk-ball { animation: none; opacity: 0; }
+  /* Invisible, but still running: it is what the exit waits on. */
+  .mk-ball { fill: none; }
   .loader.is-leaving .loader-splash { animation-duration: 0.2s; }
   .loader-step .dots::after { animation: none; content: '...'; }
   .loader { transition: opacity 0.2s linear; }
