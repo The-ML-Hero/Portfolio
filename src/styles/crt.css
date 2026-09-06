@@ -2,7 +2,8 @@
  * CRT treatment for the DOM screen layer.
  *
  * Structure, outermost first:
- *   .crt        — the tube. Owns the rounded bezel mask and the phosphor tint.
+ *   .crt        — the plane itself: rectangular and opaque, the colour of unlit tube.
+ *   .crt-tube   — the glass. Owns the rounded mask and the phosphor tint.
  *   .crt-warp   — barrel-distorted layer; carries the SVG filter and a small overscan so the
  *                 warp cannot pull the desktop's edges inside the mask.
  *   .desktop    — the actual Win95 surface.
@@ -13,17 +14,31 @@
 .crt {
   position: relative;
   overflow: hidden;
+  /*
+   * Rectangular and opaque, deliberately.
+   *
+   * This element is a DOM plane floating over the WebGL canvas, and everything outside it is
+   * transparent — so when the rounding lived here, its corners were cut out of the plane and
+   * what showed through was the page's own background colour. That was the pale arc at each
+   * corner: not part of the scene at all, and nothing placed behind the plane in 3D could
+   * cover it. The rounding moved inward to .crt-tube; this fills the corners with unlit tube.
+   */
+  background: #0a0e13;
+  filter: saturate(1.05) contrast(1.03);
+}
+
+.crt-tube {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
   /* Desktop teal, not black: the warp inset below leaves a hairline ring at the mask edge,
      and it should read as more desktop rather than as a gap. */
   background: var(--w95-desktop);
   /*
    * Tube corners: wider radius horizontally, the way a 4:3 CRT actually rounds off. Kept
-   * shallow — a late CRT is nearly square at the corners, and a big radius reads as a phone
-   * screen. The dark backing behind the desktop (see scene/ScreenSurface.tsx) is what the cut
-   * exposes, so the curve reads as glass rather than as a hole.
+   * shallow — a late CRT is nearly square at the corners, and a big radius reads as a phone.
    */
   border-radius: 3.6% / 5.2%;
-  filter: saturate(1.05) contrast(1.03);
 }
 
 .crt-warp {

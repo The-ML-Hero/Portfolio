@@ -51,6 +51,7 @@ export function Desktop({ width, height }: { width: number; height: number }) {
     <div className="crt" style={{ width, height }}>
       <CrtFilterDefs />
 
+      <div className="crt-tube">
       <div className="crt-warp">
         <div className="crt-refl" aria-hidden />
         <div
@@ -138,6 +139,7 @@ export function Desktop({ width, height }: { width: number; height: number }) {
       </div>
 
       <div className="crt-glass" />
+      </div>
     </div>
   );
 }
