@@ -11,6 +11,7 @@ import { CrtReflection } from './scene/CrtReflection';
 import { CameraRig } from './scene/CameraRig';
 import { Probe } from './scene/probe';
 import { Debug } from './scene/debug';
+import { Focus } from './scene/Focus';
 import { LoadingScreen } from './os/LoadingScreen';
 import { TitleCard } from './os/TitleCard';
 import { OVERVIEW, overviewDistance } from './scene/constants';
@@ -35,6 +36,8 @@ const showProbe = params.has('calibrate');
 const noFx = params.has('nofx');
 const noScreen = params.has('noscreen');
 const noreflect = params.has('noreflect');
+/** Escape hatch: the lens is the most expensive pass in the frame. */
+const noDof = params.has('nodof');
 /** Hold the title card up for inspection instead of letting it play out. */
 const holdTitle = params.has('title');
 
@@ -193,6 +196,8 @@ export default function App() {
         <CameraRig />
         {!noFx && (
           <EffectComposer>
+            {/* Before bloom: bokeh should spread the highlight, not the other way round. */}
+            {!noDof && <Focus />}
             {/* Just enough bloom for the troffers to glare. The vignette is gone on purpose:
                 darkened corners are the single most moody-looking thing you can do to an
                 evenly lit room, and this one is meant to look flat and unforgiving. */}

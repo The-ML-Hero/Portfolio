@@ -23,7 +23,7 @@
    * corner: not part of the scene at all, and nothing placed behind the plane in 3D could
    * cover it. The rounding moved inward to .crt-tube; this fills the corners with unlit tube.
    */
-  background: #0a0e13;
+  background: #12181f;
   filter: saturate(1.05) contrast(1.03);
 }
 

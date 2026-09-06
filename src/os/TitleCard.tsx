@@ -52,6 +52,12 @@ const smallAt = (p: number) => 1 - clamp01(p / 0.22);
 const sheetAt = (p: number) => 1 - smoothstep(0.6, 0.98, p);
 /** The outline cannot survive being scaled 50× — it goes early and quietly. */
 const outlineAt = (p: number) => 0.55 * (1 - clamp01(p / 0.28));
+/**
+ * The sheet is the nearest thing to the lens, and by the end it is racing past it. A real
+ * camera cannot hold that and the room both, so the paper goes soft while what shows through
+ * the letters stays sharp — which is also what stops the knockout reading as a flat stencil.
+ */
+const blurAt = (p: number) => 7 * smoothstep(0.34, 1, p);
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 function smoothstep(a: number, b: number, v: number) {
@@ -114,6 +120,7 @@ export function TitleCard({
       cut.current?.setAttribute('transform', t);
 
       el.style.setProperty('--tc-veil', veilAt(p).toFixed(3));
+      el.style.setProperty('--tc-blur', `${blurAt(p).toFixed(2)}px`);
       el.style.setProperty('--tc-small', smallAt(p).toFixed(3));
       el.style.setProperty('--tc-sheet', sheetAt(p).toFixed(3));
       el.style.setProperty('--tc-outline', outlineAt(p).toFixed(3));

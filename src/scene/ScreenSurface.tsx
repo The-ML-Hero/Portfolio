@@ -11,9 +11,13 @@ import { Desktop } from '../os/Desktop';
  * render target.
  */
 export function ScreenSurface() {
-  // 1.5% inset: the measured rect sits a hair proud of the glass at the bezel.
-  const w = SCREEN.width * 0.985;
-  const h = SCREEN.height * 0.985;
+  /*
+   * A hair inside the measured rect, which sits fractionally proud of the glass at the bezel.
+   * Kept small on purpose: the backing below is sized to meet this edge, and any daylight
+   * between the two shows up as a dark frame around the desktop.
+   */
+  const w = SCREEN.width * 0.995;
+  const h = SCREEN.height * 0.995;
   /**
    * drei's <Html transform> maps CSS pixels to world units at a fixed internal ratio and then
    * applies the `scale` prop on top, so the prop is not world-units-per-pixel on its own —
@@ -50,8 +54,8 @@ export function ScreenSurface() {
         * cut instead, which is what a CRT's corners actually look like.
         */}
       <mesh position={[0, 0, -0.0004]}>
-        <planeGeometry args={[SCREEN.width * 1.02, SCREEN.height * 1.02]} />
-        <meshBasicMaterial color="#0a0e13" toneMapped={false} />
+        <planeGeometry args={[SCREEN.width, SCREEN.height]} />
+        <meshBasicMaterial color="#12181f" toneMapped={false} />
       </mesh>
 
       <mesh position={[0, 0, -0.004]}>

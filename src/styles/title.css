@@ -67,6 +67,9 @@
   inset: 0;
   display: block;
   opacity: var(--tc-sheet, 1);
+  /* Defocus as it passes the lens. Softens the paper and the letterforms' own edges together,
+     because they are the same sheet — see blurAt in os/TitleCard.tsx. */
+  filter: blur(var(--tc-blur, 0px));
 }
 
 .tc-paper {

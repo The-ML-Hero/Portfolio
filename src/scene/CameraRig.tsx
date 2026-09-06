@@ -83,6 +83,13 @@ const pos = new Vector3();
 const look = new Vector3();
 
 /**
+ * Where the camera is currently looking, published for the lens to focus on.
+ *
+ * Shared mutable rather than state: it changes every frame and nothing re-renders on it.
+ */
+export const focusTarget = new Vector3();
+
+/**
  * Drives the camera from the page scroll.
  *
  * Scroll position is the single source of truth for where the camera is, which means the
@@ -138,6 +145,7 @@ export function CameraRig() {
 
     camera.position.copy(pos);
     camera.lookAt(look);
+    focusTarget.copy(look);
 
     const cam = camera as PerspectiveCamera;
     const fov = fovAt(t, path.seatedFov);
