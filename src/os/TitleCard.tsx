@@ -18,6 +18,13 @@ import '../styles/title.css';
  * slats — one per column of that grid. When the card leaves, the holes scale up and the room
  * arrives through the type rather than after it.
  *
+ * It mounts before the loader does its work and sits *underneath* it, on the same paper. The
+ * loader leaving is therefore not a cut to the room — it is a panel lifting off a sheet that
+ * was always there. `armed` is what the loader's departure switches on: until then the sheet
+ * is blank and solid, the slats have not cut the word, and no scroll is read. Mounting the
+ * card only after the loader had finished fading meant the room was briefly the only thing
+ * on screen, which gave the reveal away before it started.
+ *
  * Everything animates in CSS. Nothing here runs a rAF loop, because the WebGL scene behind it
  * is already loading and compiling and does not need the competition.
  */
@@ -52,12 +59,21 @@ function smoothstep(a: number, b: number, v: number) {
   return t * t * (3 - 2 * t);
 }
 
-export function TitleCard({ onDone, hold }: { onDone: () => void; hold?: boolean }) {
+export function TitleCard({
+  onDone,
+  hold,
+  armed,
+}: {
+  onDone: () => void;
+  hold?: boolean;
+  /** The loader has gone: cut the word, run the entrance, start reading scroll. */
+  armed?: boolean;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const done = useRef(false);
 
   useEffect(() => {
-    if (hold) return;
+    if (hold || !armed) return;
     const el = ref.current;
     if (!el) return;
 
@@ -94,10 +110,14 @@ export function TitleCard({ onDone, hold }: { onDone: () => void; hold?: boolean
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
     };
-  }, [onDone, hold]);
+  }, [onDone, hold, armed]);
 
   return (
-    <div ref={ref} className="title-card" aria-label={`Portfolio ${YEAR}, ${NAME}`}>
+    <div
+      ref={ref}
+      className={`title-card${armed || hold ? ' is-armed' : ''}`}
+      aria-label={`Portfolio ${YEAR}, ${NAME}`}
+    >
       {/*
         The sheet. Its paper and its plan grid are one masked group, so the word knocks a hole
         through both at once — a grid line cannot survive inside a letter.

@@ -36,9 +36,30 @@
    * nothing else — which is what makes the word read as dark windows against pale paper even
    * though the office behind is mostly white partitions.
    */
-  /* --tc-veil is rewritten on scroll; the fade-in animation only covers its first appearance. */
+  /* --tc-veil is rewritten on scroll. No entrance fade: the card is already on screen under
+     the loader, and the loader is what fades. Fading it in as well would double the handover
+     and put a moment of bare office between the two. */
   background: rgba(16, 36, 58, var(--tc-veil, 0.55));
-  animation: tc-veil-in 0.9s ease-out both;
+}
+
+/*
+ * Before the loader leaves. The slats have not cut the word yet, so the sheet is solid paper —
+ * indistinguishable from the loader's own ground, which is the point — and the block of small
+ * type is held back so the crossfade does not reveal a half-run odometer.
+ */
+.title-card:not(.is-armed) .tc-slat {
+  animation: none;
+  transform: scaleY(0);
+}
+
+.title-card:not(.is-armed) .tc-reel,
+.title-card:not(.is-armed) .tc-name,
+.title-card:not(.is-armed) .tc-meta {
+  animation-play-state: paused;
+}
+
+.title-card:not(.is-armed) .tc-inner {
+  opacity: 0;
 }
 
 .tc-sheet {
@@ -111,6 +132,8 @@ mask .tc-cut {
   gap: 0.55rem;
   padding: 0 6vw;
   opacity: var(--tc-small, 1);
+  /* Comes up behind the departing loader panel, not with it. */
+  transition: opacity 0.45s ease 0.25s;
 }
 
 .tc-year {
@@ -172,10 +195,6 @@ mask .tc-cut {
 }
 
 /* --- the reveal: every value below is written from scroll, not from a keyframe --- */
-@keyframes tc-veil-in {
-  from { opacity: 0.001; }
-  to { opacity: 1; }
-}
 
 /*
  * Once the visitor starts scrolling the slats must already be open — they are growing holes
@@ -236,7 +255,6 @@ mask .tc-cut {
 @media (prefers-reduced-motion: reduce) {
   .tc-slat { animation: none; transform: scaleY(1); }
   .tc-reel { animation: none; transform: translateY(calc(-1em * (20 + var(--d)))); }
-  .title-card { animation: tc-quick-in 0.3s linear both; }
   .tc-name { animation: tc-quick-in 0.3s linear 0.2s both; letter-spacing: 0.42em; }
   .tc-meta { clip-path: none; animation: tc-quick-in 0.3s linear 0.3s both; }
   /* The reveal is a scroll gesture, not an animation, so it stays — the visitor is in

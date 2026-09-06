@@ -1,31 +1,44 @@
 /*
- * Full-page boot loader. Deliberately reads as a firmware screen rather than a web spinner:
- * amber phosphor on black, block characters, no rounded corners, no easing curves that
- * suggest 2015. It sits above everything until the scene is ready.
+ * Full-page loader. It is the title card's paper sheet with a facility panel printed on it:
+ * same stock, same ink, same 34 × 24 cubicle plan, same blue as the floor. Nothing here is
+ * amber, curved, or scanned — the room this loads into is flat, bright and institutional,
+ * and the loader is the first thing that says so.
+ *
+ * Because the ground matches the card underneath exactly, leaving is only the panel fading.
+ * The sheet never blinks, so the office is never seen before the word opens through it.
  */
 
 .loader {
+  --ld-ink: #10243a;
+  --ld-paper: #e9edf1;
+  --ld-blue: #1f7fd6;
+
   position: fixed;
   inset: 0;
   z-index: 10000;
   display: grid;
   place-items: center;
-  background: #06060a;
-  color: #f0b232;
-  font-family: var(--w95-mono, 'DejaVu Sans Mono', 'Courier New', monospace);
-  transition: opacity 0.6s ease, filter 0.6s ease;
+  color: var(--ld-ink);
+  font-family: 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
+
+  /* Paper, then the plan grid at the office's own column and row count. */
+  background-color: var(--ld-paper);
+  background-image:
+    repeating-linear-gradient(to right, rgba(16, 36, 58, 0.13) 0 1px, transparent 1px 100%),
+    repeating-linear-gradient(to bottom, rgba(16, 36, 58, 0.13) 0 1px, transparent 1px 100%);
+  background-size: calc(100% / 34) calc(100% / 24);
+
+  transition: opacity 0.6s ease;
 }
 
-/* Collapse out like a CRT losing its raster. */
+/* Only the panel goes. The identical sheet behind it takes over without a seam. */
 .loader.is-leaving {
   opacity: 0;
-  filter: brightness(2.4) blur(1px);
   pointer-events: none;
 }
 
 .loader-inner {
-  width: min(560px, 88vw);
-  text-shadow: 0 0 6px rgba(240, 178, 50, 0.45);
+  width: min(560px, 82vw);
 }
 
 .loader-head {
@@ -33,29 +46,59 @@
   background: none;
   border: 0;
   box-shadow: none;
-  padding: 0;
-  margin: 0 0 18px;
-  font-size: clamp(10px, 2.4vw, 13px);
-  line-height: 1.35;
-  white-space: pre;
-  color: #ffd27a;
+  padding: 0 0 8px;
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid rgba(16, 36, 58, 0.28);
+  font-size: clamp(0.56rem, 1.15vw, 0.72rem);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
 }
 
+.loader-floor {
+  color: rgba(16, 36, 58, 0.5);
+}
+
+.loader-title {
+  margin: 18px 0 22px;
+  font-size: clamp(1.5rem, 4.6vw, 2.9rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* A single hairline that fills. No blocks, no brackets, no phosphor. */
 .loader-bar {
-  font-size: clamp(10px, 2.5vw, 14px);
-  letter-spacing: 0.5px;
-  white-space: nowrap;
+  height: 2px;
+  background: rgba(16, 36, 58, 0.16);
+  overflow: hidden;
 }
-.loader-bar .brk { color: #7a5a1e; }
-.loader-bar .fill { color: #ffc247; }
-.loader-bar .empty { color: #4a3813; }
-.loader-bar .pct { margin-left: 10px; color: #ffd27a; }
 
-.loader-step {
-  margin-top: 14px;
-  font-size: clamp(10px, 2.3vw, 12px);
-  color: #b98b34;
+.loader-fill {
+  height: 100%;
+  background: var(--ld-blue);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  transition: transform 0.25s linear;
 }
+
+.loader-status {
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--w95-mono, 'DejaVu Sans Mono', 'Courier New', monospace);
+  font-size: clamp(0.62rem, 1.35vw, 0.78rem);
+  color: rgba(16, 36, 58, 0.62);
+}
+
+.loader-pct {
+  color: var(--ld-blue);
+  font-variant-numeric: tabular-nums;
+}
+
 .loader-step .dots::after {
   content: '';
   animation: loader-dots 1.2s steps(4) infinite;
@@ -67,34 +110,27 @@
   75%  { content: '...'; }
 }
 
+/* Same footer line the title card carries, so the two read as one document. */
 .loader-foot {
-  margin-top: 26px;
-  font-size: 11px;
-  color: #5d4718;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 34px;
+  font-family: var(--w95-mono), monospace;
+  font-size: clamp(0.56rem, 1.15vw, 0.72rem);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(16, 36, 58, 0.45);
 }
 
-/* Scanlines over the whole panel, matching the CRT treatment inside the scene. */
-.loader-scan {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.28) 0px,
-    rgba(0, 0, 0, 0.28) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-  animation: loader-flicker 4s steps(20) infinite;
-}
-@keyframes loader-flicker {
-  0%, 94%, 100% { opacity: 1; }
-  95% { opacity: 0.86; }
-  97% { opacity: 1.05; }
+.loader-foot i {
+  width: 22px;
+  height: 1px;
+  background: currentColor;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .loader-scan { animation: none; }
   .loader-step .dots::after { animation: none; content: '...'; }
   .loader { transition: opacity 0.2s linear; }
+  .loader-fill { transition: none; }
 }

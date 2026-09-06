@@ -171,8 +171,13 @@ export default function App() {
 
       <ScrollHint ready={loaded} />
       <ExitHint />
+      {/*
+        The card mounts immediately and the loader covers it, rather than the card waiting for
+        the loader to leave. Both are printed on the same sheet, so the handover is the panel
+        fading off paper that never moves — the office stays hidden until the word opens.
+      */}
+      {!titled && <TitleCard onDone={handleTitled} hold={holdTitle} armed={loaded || holdTitle} />}
       {!loaded && <LoadingScreen progress={progress} onDone={() => setLoaded(true)} />}
-      {loaded && !titled && <TitleCard onDone={handleTitled} hold={holdTitle} />}
     </>
   );
 }
