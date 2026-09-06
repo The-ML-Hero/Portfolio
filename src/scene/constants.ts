@@ -67,6 +67,28 @@ export const SEATED_FRAME = {
   margin: 1.16,
 } as const;
 
+/**
+ * The same arrival on a tall viewport, framing the screen instead of the whole terminal.
+ *
+ * Fitting the full 1.62-wide terminal into a portrait phone needs about 5.6 units of standoff,
+ * and the next bank of desks is only 3.9 away — so the camera ended up behind the following
+ * row and framed *its* terminal instead of the hero's. There is no distance that fixes that;
+ * the shot has to want less.
+ */
+export const SEATED_FRAME_TALL = {
+  center: [SCREEN.center[0], SCREEN.center[1], SCREEN.z] as const,
+  width: SCREEN.width * 1.16,
+  height: SCREEN.height * 1.2,
+  margin: 1,
+} as const;
+
+/**
+ * How far back the camera may sit and still be in the hero's own bay. The next row's desk
+ * front edge is at pitchZ − desk.d/2 ≈ 3.0 from the hero, measured from the screen plane;
+ * this keeps a clear margin inside that.
+ */
+export const MAX_SEAT_DISTANCE = 2.3;
+
 /** The arrival stop. Its distance is fitted per-viewport, not fixed. */
 export const CAMERA = {
   seated: { target: SEATED_FRAME.center, fov: 40 },
@@ -88,8 +110,37 @@ export function fitDistance(
   return Math.max(forHeight, forWidth) * frame.margin;
 }
 
-export const seatedDistance = (aspect: number, fovDeg = CAMERA.seated.fov) =>
-  fitDistance(SEATED_FRAME, aspect, fovDeg);
+/** Vertical FOV that fits `frame` at a given distance — the inverse of fitDistance. */
+export function fitFov(
+  frame: { width: number; height: number; margin: number },
+  aspect: number,
+  distance: number,
+): number {
+  const halfH = (frame.height / 2) * frame.margin;
+  const halfW = (frame.width / 2) * frame.margin;
+  const tan = Math.max(halfH / distance, halfW / (distance * aspect));
+  return (2 * Math.atan(tan) * 180) / Math.PI;
+}
+
+/**
+ * The whole arrival shot for a viewport: where to look, how far back, and through what lens.
+ *
+ * Two things it will not do. It will not back out of the hero's bay to fit a frame — past
+ * MAX_SEAT_DISTANCE it opens the lens instead, because a camera behind the next row of desks
+ * frames the wrong terminal however well the numbers add up. And it will not open the lens
+ * past 62°, where the barrel distortion starts bending the monitor; beyond that the frame is
+ * simply cropped, which is the least bad of the three.
+ */
+export function seatedShot(aspect: number) {
+  const frame = aspect < 1.1 ? SEATED_FRAME_TALL : SEATED_FRAME;
+  let fov: number = CAMERA.seated.fov;
+  let distance = fitDistance(frame, aspect, fov);
+  if (distance > MAX_SEAT_DISTANCE) {
+    distance = MAX_SEAT_DISTANCE;
+    fov = Math.min(62, fitFov(frame, aspect, distance));
+  }
+  return { target: frame.center, distance, fov };
+}
 
 /* ------------------------------------------------------------------------------------------
  * The office floor.

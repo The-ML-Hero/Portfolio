@@ -59,6 +59,26 @@ function smoothstep(a: number, b: number, v: number) {
   return t * t * (3 - 2 * t);
 }
 
+/**
+ * Scale the word about its own measured centre, as an SVG transform in user units.
+ *
+ * The obvious way to do this is `transform-box: fill-box; transform-origin: center` in CSS,
+ * and it is the way this used to work — but where an engine resolves that origin differently
+ * the word scales away from some other point and slides off frame instead of coming at you,
+ * which is what iPadOS did. Measuring the box and writing translate/scale/translate leaves
+ * nothing to interpret: it is the same three numbers everywhere.
+ *
+ * The measurement is taken from the drawn outline, never from the copy inside the <mask> —
+ * getBBox on an unrendered element in <defs> is not reliable — and the two are identical text
+ * at identical size, so one box serves both.
+ */
+function centreScale(box: DOMRect | null, scale: number) {
+  if (!box || box.width === 0) return `scale(${scale})`;
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  return `translate(${cx.toFixed(2)} ${cy.toFixed(2)}) scale(${scale.toFixed(4)}) translate(${(-cx).toFixed(2)} ${(-cy).toFixed(2)})`;
+}
+
 export function TitleCard({
   onDone,
   hold,
@@ -70,6 +90,8 @@ export function TitleCard({
   armed?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const outline = useRef<SVGTextElement>(null);
+  const cut = useRef<SVGTextElement>(null);
   const done = useRef(false);
 
   useEffect(() => {
@@ -78,11 +100,19 @@ export function TitleCard({
     if (!el) return;
 
     let frame = 0;
+    /* Re-measured on resize: the word's size is in vw, so its box moves with the viewport. */
+    let box: DOMRect | null = null;
+    const measure = () => { box = outline.current?.getBBox() ?? null; };
+
     const apply = () => {
       frame = 0;
       const p = titleProgress(scrollFraction());
+      if (!box) measure();
 
-      el.style.setProperty('--tc-scale', scaleAt(p).toFixed(3));
+      const t = centreScale(box, scaleAt(p));
+      outline.current?.setAttribute('transform', t);
+      cut.current?.setAttribute('transform', t);
+
       el.style.setProperty('--tc-veil', veilAt(p).toFixed(3));
       el.style.setProperty('--tc-small', smallAt(p).toFixed(3));
       el.style.setProperty('--tc-sheet', sheetAt(p).toFixed(3));
@@ -102,13 +132,15 @@ export function TitleCard({
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(apply);
     };
+    const onResize = () => { measure(); onScroll(); };
+    measure();
     apply();
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
+    window.addEventListener('resize', onResize);
     return () => {
       if (frame) cancelAnimationFrame(frame);
       window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
+      window.removeEventListener('resize', onResize);
     };
   }, [onDone, hold, armed]);
 
@@ -146,7 +178,7 @@ export function TitleCard({
           <mask id="tc-knockout">
             <rect width="100%" height="100%" fill="#fff" />
             {/* Black paints the hole. Clipped by the slats, so it opens column by column. */}
-            <text className="tc-cut" x="50%" y="50%" clipPath="url(#tc-slats)">
+            <text ref={cut} className="tc-cut" x="50%" y="50%" clipPath="url(#tc-slats)">
               {WORD}
             </text>
           </mask>
@@ -162,7 +194,7 @@ export function TitleCard({
           letterforms need an edge of their own or they dissolve wherever a desk sits behind
           them. It rides the same transform as the hole, so the two never drift apart.
         */}
-        <text className="tc-cut tc-outline" x="50%" y="50%" clipPath="url(#tc-slats)">
+        <text ref={outline} className="tc-cut tc-outline" x="50%" y="50%" clipPath="url(#tc-slats)">
           {WORD}
         </text>
       </svg>

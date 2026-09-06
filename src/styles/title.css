@@ -82,12 +82,10 @@
   text-anchor: middle;
   dominant-baseline: middle;
   /*
-   * Scaled from its own centre as you scroll, so the holes swallow the sheet and the room
-   * arrives through the type. --tc-scale is written by the component each frame.
+   * The scale is an SVG transform attribute written by the component each frame, not a CSS
+   * transform: transform-box/transform-origin resolve differently between engines, and a
+   * wrong origin sends the word sideways instead of at you. See centreScale in TitleCard.
    */
-  transform-box: fill-box;
-  transform-origin: center;
-  transform: scale(var(--tc-scale, 1));
 }
 
 /* Inside the mask, black paints the hole. */

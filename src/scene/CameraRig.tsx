@@ -1,7 +1,7 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import { CatmullRomCurve3, PerspectiveCamera, Vector3 } from 'three';
-import { CAMERA, OVERVIEW, SEATED_FRAME, overviewDistance, seatedDistance } from './constants';
+import { OVERVIEW, overviewDistance, seatedShot } from './constants';
 import { useOS } from '../os/useOS';
 import { ARRIVE_AT, EXIT_TO, cameraProgress, scrollFraction } from '../lib/scrollZones';
 
@@ -31,8 +31,9 @@ function usePath(aspect: number) {
     const panTarget = (s: number) => a.clone().lerp(b, s);
     const panPos = (s: number) => panTarget(s).addScaledVector(dir, d);
 
-    const seatTarget = new Vector3(...SEATED_FRAME.center);
-    const seatPos = seatTarget.clone().setZ(seatTarget.z + seatedDistance(aspect));
+    const shot = seatedShot(aspect);
+    const seatTarget = new Vector3(...shot.target);
+    const seatPos = seatTarget.clone().setZ(seatTarget.z + shot.distance);
 
     const positions = new CatmullRomCurve3(
       [
@@ -62,7 +63,7 @@ function usePath(aspect: number) {
       'centripetal',
     );
 
-    return { positions, targets };
+    return { positions, targets, seatedFov: shot.fov };
   }, [aspect]);
 }
 
@@ -72,10 +73,10 @@ function usePath(aspect: number) {
  * then opened out across the descent.
  */
 const PAN_ENDS = 0.5;
-function fovAt(p: number) {
+function fovAt(p: number, seatedFov: number) {
   if (p <= PAN_ENDS) return OVERVIEW.fov;
   const k = smooth(Math.min(1, (p - PAN_ENDS) / (0.95 - PAN_ENDS)));
-  return OVERVIEW.fov + (CAMERA.seated.fov - OVERVIEW.fov) * k;
+  return OVERVIEW.fov + (seatedFov - OVERVIEW.fov) * k;
 }
 
 const pos = new Vector3();
@@ -139,7 +140,7 @@ export function CameraRig() {
     camera.lookAt(look);
 
     const cam = camera as PerspectiveCamera;
-    const fov = fovAt(t);
+    const fov = fovAt(t, path.seatedFov);
     if (Math.abs(cam.fov - fov) > 0.01) {
       cam.fov = fov;
       cam.updateProjectionMatrix();
