@@ -7,8 +7,8 @@ import { profile } from '../data/profile';
 export function About() {
   return (
     <div>
-      <h1 style={{ marginTop: 0 }}>{profile.handle}</h1>
-      <p className="dim mono">{profile.publishesAs} · {profile.location}</p>
+      <h1 style={{ marginTop: 0 }}>{profile.name}</h1>
+      <p className="dim mono">{profile.location}</p>
       <p>{profile.positioning}</p>
 
       <fieldset>

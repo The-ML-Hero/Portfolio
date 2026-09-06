@@ -6,11 +6,11 @@ const POST = [
   'EDEN Data Systems BIOS v4.21',
   'Copyright (C) 1995 EDEN Data Systems Corp.',
   '',
-  'CPU  : Abnb Systems Core @ 66 MHz',
+  'CPU  : Sherwood Systems Core @ 66 MHz',
   'Memory Test : 16384K OK',
   '',
   'Detecting IDE drives ...',
-  '  Primary Master  : ABNB-PORTFOLIO  1.2GB',
+  '  Primary Master  : SHERWOOD-PORTFOLIO  1.2GB',
   '  Primary Slave   : None',
   '',
   'Mounting /projects  ... ok',
@@ -18,7 +18,7 @@ const POST = [
   'Loading atlas.idx   ... ok',
   'Loading raymarch.gl ... ok',
   '',
-  'Starting ABNB 95 ...',
+  'Starting SHERWOOD 95 ...',
 ];
 
 /**
@@ -64,8 +64,8 @@ export function BootSequence() {
     return (
       <div className="boot-splash">
         <div className="splash-card">
-          <div className="splash-logo">ABNB<span>95</span></div>
-          <div className="splash-sub">{profile.publishesAs}</div>
+          <div className="splash-logo">SHERWOOD<span>95</span></div>
+          <div className="splash-sub">{profile.name}</div>
           <div className="splash-bar"><i /></div>
         </div>
       </div>

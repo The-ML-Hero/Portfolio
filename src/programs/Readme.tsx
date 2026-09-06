@@ -5,8 +5,7 @@ export function Readme() {
   const open = useOS((s) => s.open);
   return (
     <div>
-      <h1>{profile.handle}</h1>
-      <p className="dim mono">publishes as {profile.publishesAs}</p>
+      <h1>{profile.name}</h1>
       <p><strong>{profile.tagline}</strong></p>
       <p>{profile.education}<br />{profile.location}</p>
       <h2>Links</h2>

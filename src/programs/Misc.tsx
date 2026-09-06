@@ -24,7 +24,7 @@ export function SystemProperties() {
       <h2 style={{ marginTop: 0 }}>System</h2>
       <table>
         <tbody>
-          <tr><td style={{ width: '32%' }}>User</td><td>{profile.handle} · {profile.publishesAs}</td></tr>
+          <tr><td style={{ width: '32%' }}>User</td><td>{profile.name}</td></tr>
           <tr><td>OS</td><td>{profile.environment.os}</td></tr>
           <tr><td>Editor</td><td>{profile.environment.editor}</td></tr>
           <tr><td>Languages</td><td>{profile.languages.join(', ')}</td></tr>

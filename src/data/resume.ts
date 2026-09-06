@@ -4,8 +4,7 @@ import { projects } from './projects';
 
 /** The resume is a view over the same data as everything else — no second source of truth. */
 export const resume = {
-  name: profile.publishesAs,
-  known: profile.handle,
+  name: profile.name,
   headline: profile.tagline,
   contact: [profile.location, profile.email, profile.phone, profile.siteLabel, profile.githubLabel],
   education: profile.schooling,

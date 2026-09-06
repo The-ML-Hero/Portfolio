@@ -1,5 +1,7 @@
 // Source: ~/Downloads/portfolio-brief (1).md — Projects section.
 
+import { profile } from './profile';
+
 export type Tier = 'selected' | 'other' | 'fx';
 
 export interface Project {
@@ -96,7 +98,7 @@ export const projects: Project[] = [
       'Generates a reference implementation and grading test suite per milestone for verification',
     ],
     meta: 'Team project, supervised by Dr. K. Sundarakantham.',
-    team: ['Abnb', 'Athi Sankara Kailash K', 'Anbu U G'],
+    team: [profile.name, 'Athi Sankara Kailash K', 'Anbu U G'],
   },
   {
     id: 'http-server',

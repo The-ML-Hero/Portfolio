@@ -3,8 +3,9 @@
 // Every figure on the site resolves here. Do not inline numbers in components.
 
 export const profile = {
-  handle: 'Abnb',
-  publishesAs: 'A. Adithya Sherwood',
+  name: 'A. Adithya Sherwood',
+  /** Short form, for places where the full name is too long to set. */
+  surname: 'Sherwood',
   tagline: 'Systems programmer with a graphics habit.',
   education: 'Third-year BE CSE, Thiagarajar College of Engineering (TCE), Madurai',
   location: 'Madurai, Tamil Nadu, India',

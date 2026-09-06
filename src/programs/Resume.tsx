@@ -12,7 +12,7 @@ export function Resume() {
         <button onClick={() => window.print()} className="no-print">Print…</button>
       </div>
       <p className="dim mono" style={{ marginTop: 2 }}>
-        goes by {resume.known} · {resume.contact.join(' · ')}
+        {resume.contact.join(' · ')}
       </p>
       <p><strong>{resume.headline}</strong></p>
 

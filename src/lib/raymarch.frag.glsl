@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// SWAP SEAM. Replace this whole file with Abnb's original shader.
+// SWAP SEAM. Replace this whole file with the author's original shader.
 //
 // Contract the host guarantees:
 //   uniform vec2  uResolution;  // render target size in px

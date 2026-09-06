@@ -92,7 +92,7 @@ export function Desktop({ width, height }: { width: number; height: number }) {
 
           {startOpen && (
             <div className="start-menu" onPointerDown={(e) => e.stopPropagation()}>
-              <div className="rail">ABNB<span>95</span></div>
+              <div className="rail">SHERWOOD<span>95</span></div>
               <ul>
                 {PROGRAM_LIST.map((p) =>
                   p.sep ? <hr key={p.id} /> : (

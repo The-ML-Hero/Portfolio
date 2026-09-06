@@ -30,7 +30,7 @@ export const corpus: Doc[] = [
   {
     id: 103,
     path: '/about/profile.md',
-    title: `${profile.handle} — profile`,
+    title: `${profile.name} — profile`,
     text: [profile.tagline, profile.positioning, profile.education, profile.location,
       profile.languages.join(' '), ...profile.domains, profile.environment.os,
       profile.environment.editor, ...profile.coursework, ...profile.ongoing].join(' '),

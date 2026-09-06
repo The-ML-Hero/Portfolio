@@ -3,7 +3,7 @@
  * without the UI changing. See the plan's "Swap seams".
  *
  * v1 (`CorpusBackend`): scores a bundled corpus in TypeScript.
- * v2 (`SegmentBackend`, not yet built): fetches Abnb's Go-produced index.bin / offsets.bin /
+ * v2 (`SegmentBackend`, not yet built): fetches the author's Go-produced index.bin / offsets.bin /
  *    docstore.bin and decodes the 16-byte posting struct with a DataView.
  */
 
