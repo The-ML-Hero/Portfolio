@@ -76,12 +76,13 @@ export function LoadingScreen({ progress, onDone }: { progress: number; onDone: 
    * Under reduced motion the ball is invisible but its animation still runs, purely so this
    * keeps working.
    */
-  const closed = useCallback(() => {
+  const untilClosed = useCallback(() => {
     const anim = ball.current?.getAnimations?.()[0];
     const t = anim?.currentTime;
     // No animation to wait on (unsupported, or none running): nothing to hold for.
-    if (typeof t !== 'number') return true;
-    return t % CYCLE_MS >= FLY_MS;
+    if (typeof t !== 'number') return 0;
+    const phase = t % CYCLE_MS;
+    return phase >= FLY_MS ? 0 : FLY_MS - phase;
   }, []);
 
   // Ease the bar toward real progress so it never jumps or stalls at a hard number.
@@ -108,16 +109,25 @@ export function LoadingScreen({ progress, onDone }: { progress: number; onDone: 
    */
   useEffect(() => {
     if (progress < 100) return;
-    let raf = 0;
+    let poll = 0;
     let beat = 0;
     const go = () => {
       beat = window.setTimeout(() => setLeaving(true), BEAT_MS);
     };
-    const poll = () => {
-      if (closed()) go();
-      else raf = requestAnimationFrame(poll);
+    /*
+     * Polled on a timer, not on rAF, but reading the animation's clock either way. The window
+     * where the A stands closed is 22% of a cycle, and on a slow device rAF does not fire
+     * often enough to be sure of landing in it — measured missing it repeatedly at 2 fps. The
+     * timer is paced by how much of the flight is actually left, so it costs nothing while
+     * waiting and still cannot fire early on a page that is not painting: the clock it reads
+     * only advances when frames are produced.
+     */
+    const tick = () => {
+      const wait = untilClosed();
+      if (wait <= 0) go();
+      else poll = window.setTimeout(tick, Math.min(wait, 250));
     };
-    poll();
+    tick();
     /*
      * Never wedge on the mark. A painting tab reaches the closed window inside one cycle, so
      * this only fires when the animation is not running at all — and it is deliberately far
@@ -126,11 +136,11 @@ export function LoadingScreen({ progress, onDone }: { progress: number; onDone: 
      */
     const bail = setTimeout(go, 15000);
     return () => {
-      if (raf) cancelAnimationFrame(raf);
+      clearTimeout(poll);
       clearTimeout(beat);
       clearTimeout(bail);
     };
-  }, [progress, closed]);
+  }, [progress, untilClosed]);
 
   /* Unmount only once the flood has covered the page and settled onto the card underneath. */
   useEffect(() => {
